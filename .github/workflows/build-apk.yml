@@ -55,7 +55,7 @@ jobs:
         run: |
           set -o pipefail
           if ! ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee gradle-test.log; then
-            ERR_MSG=$(grep -iE "e: |FAILURE|went wrong|Exception|Error|Unresolved" gradle-test.log | head -n 30 | tr '\n' ' ' | cut -c 1-900)
+            ERR_MSG=$(grep -v "checkKotlinGradlePluginConfigurationErrors" gradle-test.log | grep -iE "^e: |FAILURE|went wrong|Execution failed|Unresolved|AAPT" -A 4 | head -n 35 | tr '\n' ' ' | cut -c 1-900)
             echo "::error title=UnitTestBuildFailure::$ERR_MSG"
             exit 1
           fi
@@ -68,7 +68,7 @@ jobs:
         run: |
           set -o pipefail
           if ! ./gradlew assembleDebug assembleRelease --stacktrace 2>&1 | tee gradle-assemble.log; then
-            ERR_MSG=$(grep -iE "e: |FAILURE|went wrong|Exception|Error|Unresolved|AAPT" gradle-assemble.log | head -n 30 | tr '\n' ' ' | cut -c 1-900)
+            ERR_MSG=$(grep -v "checkKotlinGradlePluginConfigurationErrors" gradle-assemble.log | grep -iE "^e: |FAILURE:|went wrong|Execution failed|Unresolved|AAPT|error:" -A 5 | head -n 40 | tr '\n' ' ' | cut -c 1-900)
             echo "::error title=AssembleApkFailure::$ERR_MSG"
             exit 1
           fi
