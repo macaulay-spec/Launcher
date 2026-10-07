@@ -8,16 +8,18 @@ import android.util.LruCache
 import com.astra.launcher.core.storage.PerformancePreferences
 
 /**
- * Astra Performance & Low-End Device Budget Engine (Sections 38 & 39).
- * Automatically adapts blur radius, shadow elevation, live wallpaper motion, and transition
+ * Astra Performance & Low-End Device Budget Engine (Section 30).
+ * Automatically adapts blur radius, shadow elevation, icon cache capacity, and transition
  * durations when low RAM, battery saver, or accessibility reduced-motion is active.
  */
 data class AstraVisualBudget(
     val effectiveBlurRadiusDp: Float,
+    val enableRealtimeBlur: Boolean,
     val enableAtmosphericShaderOverlay: Boolean,
     val enableElevationShadows: Boolean,
     val motionDurationScale: Float,
     val isLowEndModeActive: Boolean,
+    val iconCacheMaxEntries: Int,
     val totalRamMb: Long,
     val availableRamMb: Long,
     val coldStartDurationMs: Long
@@ -59,7 +61,6 @@ class AstraPerformanceManager(private val context: Context? = null) {
         try {
             iconBitmapCache?.put(packageName, bitmap)
         } catch (_: Throwable) {
-            // Ignore in headless unit tests
         }
     }
 
@@ -67,13 +68,28 @@ class AstraPerformanceManager(private val context: Context? = null) {
         try {
             iconBitmapCache?.evictAll()
         } catch (_: Throwable) {
-            // Ignore
         }
     }
 
     fun evaluateBudget(
         prefs: PerformancePreferences,
         isLowBattery: Boolean = false
+    ): AstraVisualBudget {
+        return computeVisualBudget(
+            animationsEnabled = prefs.animationsEnabled,
+            reducedMotion = prefs.reducedMotion,
+            blurEnabled = prefs.blurEnabled,
+            forceLowEndMode = prefs.lowEndDeviceModeOverride,
+            isLowBattery = isLowBattery
+        )
+    }
+
+    fun computeVisualBudget(
+        animationsEnabled: Boolean,
+        reducedMotion: Boolean,
+        blurEnabled: Boolean,
+        forceLowEndMode: Boolean,
+        isLowBattery: Boolean
     ): AstraVisualBudget {
         var isHardwareLowRam = false
         var totalMb = 6144L
@@ -90,28 +106,30 @@ class AstraPerformanceManager(private val context: Context? = null) {
                     isHardwareLowRam = am.isLowRamDevice || memInfo.lowMemory || totalMb <= 3072L
                 }
             } catch (_: Throwable) {
-                // Safe fallback
             }
         }
 
-        val lowEndActive = prefs.lowEndDeviceModeOverride || isHardwareLowRam || isLowBattery
+        val lowEndActive = forceLowEndMode || isHardwareLowRam || isLowBattery
+        val realtimeBlur = blurEnabled && !lowEndActive
         val effectiveBlur = when {
-            !prefs.blurEnabled -> 0f
+            !blurEnabled -> 0f
             lowEndActive -> 6f
             else -> 20f
         }
         val motionScale = when {
-            !prefs.animationsEnabled || prefs.reducedMotion -> 0f
+            !animationsEnabled || reducedMotion -> 0f
             lowEndActive -> 0.55f
             else -> 1.0f
         }
 
         return AstraVisualBudget(
             effectiveBlurRadiusDp = effectiveBlur,
-            enableAtmosphericShaderOverlay = prefs.liveWallpaperEffects && !lowEndActive,
+            enableRealtimeBlur = realtimeBlur,
+            enableAtmosphericShaderOverlay = realtimeBlur,
             enableElevationShadows = !lowEndActive,
             motionDurationScale = motionScale,
             isLowEndModeActive = lowEndActive,
+            iconCacheMaxEntries = if (lowEndActive) 12 else 64,
             totalRamMb = totalMb,
             availableRamMb = availMb,
             coldStartDurationMs = firstHomeDrawRecordedMs

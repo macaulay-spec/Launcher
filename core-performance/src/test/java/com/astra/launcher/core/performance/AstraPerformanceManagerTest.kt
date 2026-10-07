@@ -16,8 +16,10 @@ class AstraPerformanceManagerTest {
             isLowBattery = false
         )
         assertTrue(budget.isLowEndModeActive)
+        assertFalse(budget.enableRealtimeBlur)
         assertFalse(budget.enableAtmosphericShaderOverlay)
         assertEquals(6f, budget.effectiveBlurRadiusDp, 0.01f)
+        assertEquals(12, budget.iconCacheMaxEntries)
     }
 
     @Test
