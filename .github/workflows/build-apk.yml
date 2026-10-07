@@ -1,0 +1,91 @@
+name: Build Astra Launcher APK
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  checks: write
+
+jobs:
+  build-apk:
+    name: Compile, Test & Package Full Astra APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Ensure gradlew is executable
+        run: chmod +x ./gradlew
+
+      - name: Generate Release Signing Keystore (for installable signed Release APK)
+        run: |
+          keytool -genkeypair -v \
+            -keystore app/astra-release.jks \
+            -alias astra-key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass astra_release_store_2026 \
+            -keypass astra_release_key_2026 \
+            -dname "CN=Astra Launcher, OU=Astra OS Systems, O=Astra, L=San Francisco, ST=CA, C=US"
+
+      - name: Run Unit Tests across all modules
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Build Debug & Signed Release APKs
+        env:
+          ASTRA_KEYSTORE_PASSWORD: astra_release_store_2026
+          ASTRA_KEY_ALIAS: astra-key
+          ASTRA_KEY_PASSWORD: astra_release_key_2026
+        run: ./gradlew assembleDebug assembleRelease --stacktrace
+
+      - name: Collect & Verify Built APKs
+        run: |
+          mkdir -p artifacts/apk
+          cp app/build/outputs/apk/debug/app-debug.apk artifacts/apk/AstraLauncher-v1.0.0-debug.apk
+          cp app/build/outputs/apk/release/app-release.apk artifacts/apk/AstraLauncher-v1.0.0-release-signed.apk
+          ls -lh artifacts/apk/
+          sha256sum artifacts/apk/*.apk > artifacts/apk/SHA256SUMS.txt
+          cat artifacts/apk/SHA256SUMS.txt
+
+      - name: Upload Astra Launcher Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstraLauncher-Debug-APK
+          path: artifacts/apk/AstraLauncher-v1.0.0-debug.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload Astra Launcher Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstraLauncher-Release-Signed-APK
+          path: |
+            artifacts/apk/AstraLauncher-v1.0.0-release-signed.apk
+            artifacts/apk/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 90

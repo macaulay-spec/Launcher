@@ -1,0 +1,22 @@
+# Gradle & Android build artifacts
+.gradle/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+.cxx/
+captures/
+.externalNativeBuild/
+.navigation/
+output-metadata.json
+
+# Keystore files (generated in CI or local scratch)
+*.jks
+*.keystore
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+Unselected files/
