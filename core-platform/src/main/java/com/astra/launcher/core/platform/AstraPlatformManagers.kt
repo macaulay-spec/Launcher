@@ -825,7 +825,7 @@ class AstraSystemController(private val context: Context?) {
         launchIntentSafely(Intent(Settings.ACTION_SOUND_SETTINGS))
 
     fun openBatterySettings(): Boolean =
-        launchIntentSafely(Intent(Intent.ACTION_BATTERY_SAVER_SETTINGS))
+        launchIntentSafely(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
 
     fun openSystemSettings(): Boolean =
         launchIntentSafely(Intent(Settings.ACTION_SETTINGS))

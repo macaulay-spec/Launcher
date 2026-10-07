@@ -3,9 +3,11 @@ name: Build & Verify Astra Real Android Launcher APK
 on:
   push:
     branches: [ "**" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-verify:
