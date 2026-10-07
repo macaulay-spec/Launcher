@@ -21,7 +21,7 @@
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:hardwareAccelerated="true"
@@ -62,7 +62,7 @@
         -->
         <service
             android:name=".AstraNotificationListenerService"
-            android:label="@string/notif_service_label"
+            android:label="@string/notification_listener_label"
             android:exported="true"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
@@ -83,7 +83,7 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/astra_orbital_clock_widget_info" />
+                android:resource="@xml/astra_clock_widget_info" />
         </receiver>
 
     </application>
