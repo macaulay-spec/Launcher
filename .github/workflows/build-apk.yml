@@ -25,24 +25,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"
+          cache: "gradle"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: wrapper
-
-      - name: Ensure gradlew is executable
-        run: chmod +x ./gradlew
-
-      - name: Generate Release Signing Keystore (for installable signed Release APK)
+      - name: Configure Pre-Installed Android SDK & Accept Licenses
         run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}" >> $GITHUB_ENV
+          yes | ${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          chmod +x ./gradlew
+
+      - name: Generate Release Signing Keystore
+        run: |
+          rm -f app/astra-release.jks
           keytool -genkeypair -v \
             -keystore app/astra-release.jks \
             -alias astra-key \
@@ -53,15 +51,27 @@ jobs:
             -keypass astra_release_key_2026 \
             -dname "CN=Astra Launcher, OU=Astra OS Systems, O=Astra, L=San Francisco, ST=CA, C=US"
 
-      - name: Run Unit Tests across all modules
-        run: ./gradlew testDebugUnitTest --stacktrace
+      - name: Run Unit Tests across all 16 modules
+        run: |
+          set -o pipefail
+          if ! ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee gradle-test.log; then
+            ERR_MSG=$(grep -iE "e: |FAILURE|went wrong|Exception|Error|Unresolved" gradle-test.log | head -n 30 | tr '\n' ' ' | cut -c 1-900)
+            echo "::error title=UnitTestBuildFailure::$ERR_MSG"
+            exit 1
+          fi
 
       - name: Build Debug & Signed Release APKs
         env:
           ASTRA_KEYSTORE_PASSWORD: astra_release_store_2026
           ASTRA_KEY_ALIAS: astra-key
           ASTRA_KEY_PASSWORD: astra_release_key_2026
-        run: ./gradlew assembleDebug assembleRelease --stacktrace
+        run: |
+          set -o pipefail
+          if ! ./gradlew assembleDebug assembleRelease --stacktrace 2>&1 | tee gradle-assemble.log; then
+            ERR_MSG=$(grep -iE "e: |FAILURE|went wrong|Exception|Error|Unresolved|AAPT" gradle-assemble.log | head -n 30 | tr '\n' ' ' | cut -c 1-900)
+            echo "::error title=AssembleApkFailure::$ERR_MSG"
+            exit 1
+          fi
 
       - name: Collect & Verify Built APKs
         run: |
@@ -71,6 +81,8 @@ jobs:
           ls -lh artifacts/apk/
           sha256sum artifacts/apk/*.apk > artifacts/apk/SHA256SUMS.txt
           cat artifacts/apk/SHA256SUMS.txt
+          APK_SUMMARY=$(ls -lh artifacts/apk/*.apk | awk '{print $9 ": " $5}' | tr '\n' ' | ')
+          echo "::notice title=AstraAPKsBuilt::$APK_SUMMARY"
 
       - name: Upload Astra Launcher Debug APK
         uses: actions/upload-artifact@v4
