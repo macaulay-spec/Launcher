@@ -24,9 +24,9 @@ android {
             val keystoreFile = file("astra-release.jks")
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = System.getenv("ASTRA_KEYSTORE_PASSWORD") ?: "astra_release_store_2026"
+                storePassword = System.getenv("ASTRA_KEYSTORE_PASSWORD") ?: "astra_release_2026"
                 keyAlias = System.getenv("ASTRA_KEY_ALIAS") ?: "astra-key"
-                keyPassword = System.getenv("ASTRA_KEY_PASSWORD") ?: "astra_release_key_2026"
+                keyPassword = System.getenv("ASTRA_KEY_PASSWORD") ?: "astra_release_2026"
             }
         }
     }

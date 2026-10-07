@@ -38,38 +38,30 @@ jobs:
           yes | ${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           chmod +x ./gradlew
 
-      - name: Generate Release Signing Keystore
+      - name: Generate PKCS12 Release Signing Keystore
         run: |
           rm -f app/astra-release.jks
           keytool -genkeypair -v \
+            -storetype PKCS12 \
             -keystore app/astra-release.jks \
             -alias astra-key \
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass astra_release_store_2026 \
-            -keypass astra_release_key_2026 \
+            -storepass astra_release_2026 \
+            -keypass astra_release_2026 \
             -dname "CN=Astra Launcher, OU=Astra OS Systems, O=Astra, L=San Francisco, ST=CA, C=US"
 
-      - name: Run Unit Tests across all 16 modules
-        run: |
-          set -o pipefail
-          if ! ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee gradle-test.log; then
-            ERR_MSG=$(grep -v "checkKotlinGradlePluginConfigurationErrors" gradle-test.log | grep -iE "^e: |FAILURE|went wrong|Execution failed|Unresolved|AAPT" -A 4 | head -n 35 | tr '\n' ' ' | cut -c 1-900)
-            echo "::error title=UnitTestBuildFailure::$ERR_MSG"
-            exit 1
-          fi
-
-      - name: Build Debug & Signed Release APKs
+      - name: Run Unit Tests & Build Debug + Signed Release APKs
         env:
-          ASTRA_KEYSTORE_PASSWORD: astra_release_store_2026
+          ASTRA_KEYSTORE_PASSWORD: astra_release_2026
           ASTRA_KEY_ALIAS: astra-key
-          ASTRA_KEY_PASSWORD: astra_release_key_2026
+          ASTRA_KEY_PASSWORD: astra_release_2026
         run: |
           set -o pipefail
-          if ! ./gradlew assembleDebug assembleRelease --stacktrace 2>&1 | tee gradle-assemble.log; then
-            ERR_MSG=$(grep -v "checkKotlinGradlePluginConfigurationErrors" gradle-assemble.log | grep -iE "^e: |FAILURE:|went wrong|Execution failed|Unresolved|AAPT|error:" -A 5 | head -n 40 | tr '\n' ' ' | cut -c 1-900)
-            echo "::error title=AssembleApkFailure::$ERR_MSG"
+          if ! ./gradlew testDebugUnitTest assembleDebug assembleRelease --stacktrace 2>&1 | tee gradle-build.log; then
+            ERR_MSG=$(grep -v "checkKotlinGradlePluginConfigurationErrors" gradle-build.log | grep -iE "^e: |FAILURE:|went wrong|Execution failed|Unresolved|AAPT|error:" -A 5 | head -n 40 | tr '\n' ' ' | cut -c 1-900)
+            echo "::error title=GradleBuildFailure::$ERR_MSG"
             exit 1
           fi
 
@@ -81,10 +73,10 @@ jobs:
           ls -lh artifacts/apk/
           sha256sum artifacts/apk/*.apk > artifacts/apk/SHA256SUMS.txt
           cat artifacts/apk/SHA256SUMS.txt
-          APK_SUMMARY=$(ls -lh artifacts/apk/*.apk | awk '{print $9 ": " $5}' | tr '\n' ' | ')
-          echo "::notice title=AstraAPKsBuilt::$APK_SUMMARY"
+          APK_SUMMARY=$(ls -lh artifacts/apk/*.apk | awk '{print $9 " (" $5 ")"}' | tr '\n' ' ')
+          echo "::notice title=AstraAPKsBuiltSuccessfully::$APK_SUMMARY"
 
-      - name: Upload Astra Launcher Debug APK
+      - name: Upload Astra Launcher Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AstraLauncher-Debug-APK
@@ -92,7 +84,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Upload Astra Launcher Signed Release APK
+      - name: Upload Astra Launcher Signed Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AstraLauncher-Release-Signed-APK
@@ -101,3 +93,16 @@ jobs:
             artifacts/apk/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish APKs to GitHub Release (v1.0.0)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete v1.0.0 --yes --cleanup-tag || true
+          gh release create v1.0.0 \
+            artifacts/apk/AstraLauncher-v1.0.0-debug.apk \
+            artifacts/apk/AstraLauncher-v1.0.0-release-signed.apk \
+            artifacts/apk/SHA256SUMS.txt \
+            --target "${{ github.sha }}" \
+            --title "Astra Launcher v1.0.0 — Full Android OS Environment" \
+            --notes "Automated build of all 16 Astra Launcher Android modules (Kotlin + Jetpack Compose). Includes signed release APK, debug APK, 5 curated wallpapers, offline command search, and full 40-frame visual inventory."
