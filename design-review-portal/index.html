@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astra Launcher — Master Visual Review Board, 40-Frame Inventory & OS Simulator</title>
+  <style>
+    :root {
+      --astra-black: #0A0B0D;
+      --graphite-1: #111318;
+      --graphite-2: #171A20;
+      --graphite-3: #20242C;
+      --cloud: #F5F6F8;
+      --mist: #D8DBE1;
+      --ink: #171A20;
+      --accent-primary: #7DD3FC;
+      --accent-secondary: #A78BFA;
+      --success: #34D399;
+      --warning: #FBBF24;
+      --error: #F87171;
+      --info: #60A5FA;
+      --surface-glass: rgba(23, 26, 32, 0.74);
+      --surface-glass-strong: rgba(17, 19, 24, 0.90);
+      --border-subtle: rgba(245, 246, 248, 0.14);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--astra-black);
+      color: var(--cloud);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Header */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 11, 13, 0.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #171A20, #111318);
+      border: 1px solid rgba(125, 211, 252, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--accent-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--graphite-1);
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .nav-tab {
+      background: transparent;
+      color: var(--mist);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 160ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .nav-tab.active {
+      background: rgba(125, 211, 252, 0.18);
+      color: var(--accent-primary);
+      border: 1px solid rgba(125, 211, 252, 0.45);
+    }
+
+    .apk-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(52, 211, 153, 0.14);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: var(--success);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .view-section {
+      display: none;
+    }
+    .view-section.active {
+      display: block;
+    }
+
+    /* Simulator Layout */
+    .simulator-grid {
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .simulator-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Phone Hardware Frame */
+    .phone-frame {
+      width: 380px;
+      height: 790px;
+      margin: 0 auto;
+      border-radius: 46px;
+      padding: 12px;
+      background: linear-gradient(145deg, #272C36, #101217);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.12);
+      position: relative;
+      user-select: none;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .phone-screen.light-mode {
+      color: var(--ink);
+    }
+
+    .phone-notch {
+      width: 96px;
+      height: 22px;
+      background: #07080A;
+      border-radius: 999px;
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .phone-overlay-dim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.06) 35%, rgba(0,0,0,0.48) 100%);
+      pointer-events: none;
+      transition: background 220ms ease;
+    }
+
+    .phone-status-bar {
+      position: relative;
+      z-index: 15;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 22px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .privacy-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(52, 211, 153, 0.24);
+      border: 1px solid rgba(52, 211, 153, 0.7);
+      color: #34D399;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+    }
+
+    .phone-body {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+    }
+
+    .phone-gesture-bar {
+      position: relative;
+      z-index: 15;
+      padding: 8px 0 10px;
+      display: flex;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .gesture-pill {
+      width: 118px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(245, 246, 248, 0.55);
+    }
+
+    /* Reusable Astra Cards inside Phone */
+    .astra-glass {
+      background: rgba(23, 26, 32, 0.74);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(245, 246, 248, 0.14);
+      border-radius: 20px;
+      padding: 13px;
+      color: var(--cloud);
+    }
+
+    .light-mode .astra-glass {
+      background: rgba(245, 246, 248, 0.86);
+      border: 1px solid rgba(23, 26, 32, 0.14);
+      color: var(--ink);
+    }
+
+    .astra-solid {
+      background: #111318;
+      border: 1px solid rgba(245, 246, 248, 0.12);
+      border-radius: 20px;
+      padding: 13px;
+      color: var(--cloud);
+    }
+
+    .light-mode .astra-solid {
+      background: #FFFFFF;
+      border: 1px solid rgba(23, 26, 32, 0.12);
+      color: var(--ink);
+    }
+
+    .app-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .app-icon-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 14px;
+      transition: transform 120ms ease;
+    }
+    .app-icon-tile:hover {
+      transform: translateY(-2px);
+    }
+
+    .app-icon-box {
+      width: 50px;
+      height: 50px;
+      border-radius: 15px;
+      background: linear-gradient(145deg, rgba(23, 26, 32, 0.92), rgba(125, 211, 252, 0.18));
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--accent-primary);
+    }
+
+    .app-icon-label {
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 68px;
+    }
+
+    .widget-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .dock-bar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 8px;
+      border-radius: 26px;
+      background: rgba(17, 19, 24, 0.88);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(245, 246, 248, 0.15);
+    }
+
+    /* Right Control Deck */
+    .control-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .deck-card {
+      background: var(--graphite-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 22px;
+    }
+
+    .deck-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent-primary);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .deck-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip-btn {
+      background: var(--graphite-2);
+      color: var(--mist);
+      border: 1px solid var(--border-subtle);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 140ms ease;
+    }
+
+    .chip-btn:hover, .chip-btn.active {
+      background: rgba(125, 211, 252, 0.18);
+      color: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    /* 8-Screen Visual Review Board Grid (Section 47) */
+    .review-board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 22px;
+    }
+
+    .mini-phone {
+      height: 540px;
+      border-radius: 32px;
+      padding: 14px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 40-Frame Inventory Grid */
+    .frames-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .frame-item-card {
+      background: var(--graphite-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 160ms ease;
+    }
+
+    .frame-item-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+
+    .wallpaper-showcase {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .wp-card {
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: var(--graphite-1);
+      cursor: pointer;
+    }
+
+    .wp-preview {
+      height: 320px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-header">
+    <div class="brand-row">
+      <div class="brand-logo">
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+          <path d="M8 29C11 16 36 15 40 27" stroke="#7DD3FC" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M15 37L24 10L33 37" stroke="#F5F6F8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="35" cy="15" r="2.8" fill="#7DD3FC"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-subtitle">Single Source of Truth · Master Build</div>
+        <div class="brand-title">Astra Launcher OS Environment</div>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchMainTab('simulator', this)">1. Interactive OS Simulator</button>
+      <button class="nav-tab" onclick="switchMainTab('review-board', this)">2. 8-Screen Review Board (Sec 47)</button>
+      <button class="nav-tab" onclick="switchMainTab('inventory-40', this)">3. 40-Frame Inventory (Sec 45)</button>
+      <button class="nav-tab" onclick="switchMainTab('wallpapers', this)">4. Curated Wallpapers (Sec 10)</button>
+      <button class="nav-tab" onclick="switchMainTab('tokens-apk', this)">5. Tokens, 18 Components & APK</button>
+    </nav>
+
+    <div class="apk-badge">
+      <span>●</span>
+      <span>16 Kotlin/Compose Modules · GitHub Actions APK</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SECTION 1: INTERACTIVE OS SIMULATOR -->
+    <section id="tab-simulator" class="view-section active">
+      <div class="simulator-grid">
+
+        <!-- Interactive Phone Hardware Viewport -->
+        <div>
+          <div class="phone-frame">
+            <div id="sim-screen" class="phone-screen" style="background-image: url('/wallpapers/wallpaper_orbit_dawn.jpg');">
+              <div class="phone-notch"></div>
+              <div id="sim-dim" class="phone-overlay-dim"></div>
+
+              <!-- Status Bar -->
+              <div class="phone-status-bar" onclick="setSurface('notifications')">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span id="sim-time-small">09:41</span>
+                  <span id="sim-offline-pill" style="display:none; background:rgba(251,191,36,0.25); color:#FBBF24; padding:1px 6px; border-radius:999px; font-size:9px;">OFFLINE</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span id="sim-privacy-pill" class="privacy-pill" style="display:none;">● CAM·MIC</span>
+                  <span>5G</span>
+                  <span id="sim-battery-text">84%</span>
+                </div>
+              </div>
+
+              <!-- Dynamic Surface Body -->
+              <div id="sim-body" class="phone-body"></div>
+
+              <!-- Home Gesture Pill -->
+              <div class="phone-gesture-bar" onclick="setSurface('home')" title="Return to Astra Home">
+                <div class="gesture-pill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control Deck & Continuum Walkthrough -->
+        <div class="control-deck">
+
+          <div class="deck-card">
+            <div class="deck-label">Section 52 · Design Acceptance Gate Continuum</div>
+            <div class="deck-title">Continuous Phone Environment Flow</div>
+            <p style="font-size:13px; color:var(--mist); margin-bottom:14px;">
+              Click any surface in the canonical sequence below or interact directly inside the phone viewport on the left:
+              <strong>Lock → Unlock → Home → Search → Launch → Back → Home → Notifications → Control Center → Recents → Settings → Personalize → Home</strong>.
+            </p>
+            <div class="chip-row" id="surface-chips">
+              <button class="chip-btn" onclick="setSurface('lock')">Lock Screen</button>
+              <button class="chip-btn" onclick="setSurface('aod')">Always-On (AOD)</button>
+              <button class="chip-btn active" onclick="setSurface('home')">Astra Home</button>
+              <button class="chip-btn" onclick="setSurface('home-edit')">Home Editor</button>
+              <button class="chip-btn" onclick="setSurface('apps')">App Library</button>
+              <button class="chip-btn" onclick="setSurface('search')">Command Search</button>
+              <button class="chip-btn" onclick="setSurface('notifications')">Notification Shade</button>
+              <button class="chip-btn" onclick="setSurface('controls')">Spatial Control Plane</button>
+              <button class="chip-btn" onclick="setSurface('recents')">Recents Continuum</button>
+              <button class="chip-btn" onclick="setSurface('personalize')">Personalization Studio</button>
+              <button class="chip-btn" onclick="setSurface('widgets')">Widget Picker</button>
+              <button class="chip-btn" onclick="setSurface('settings')">Settings (13 Sections)</button>
+              <button class="chip-btn" onclick="setSurface('onboarding')">6-Step Onboarding</button>
+            </div>
+          </div>
+
+          <div class="deck-card">
+            <div class="deck-label">Section 10 & 23 · Atmosphere, Wallpaper & Clock Grammar</div>
+            <div class="deck-title">Live Token & Wallpaper Controls</div>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:12px; color:var(--mist); margin-bottom:6px;">Wallpaper & Theme Atmosphere:</div>
+              <div class="chip-row">
+                <button class="chip-btn active" onclick="setWallpaper('orbit_dawn', false, '#7DD3FC')">Orbit Dawn (Default Dark)</button>
+                <button class="chip-btn" onclick="setWallpaper('nocturne_flow', false, '#A78BFA')">Nocturne Flow</button>
+                <button class="chip-btn" onclick="setWallpaper('glass_horizon', true, '#0284C7')">Glass Horizon</button>
+                <button class="chip-btn" onclick="setWallpaper('morning_mist', true, '#0284C7')">Orbit Dawn · Light (Morning)</button>
+                <button class="chip-btn" onclick="setWallpaper('graphite_monolith', false, '#38BDF8')">Graphite Monolith</button>
+              </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <div style="font-size:12px; color:var(--mist); margin-bottom:6px;">Adaptive Clock Typography (Section 11):</div>
+              <div class="chip-row">
+                <button class="chip-btn active" onclick="setClockStyle('minimal')">1. Minimal Numeral</button>
+                <button class="chip-btn" onclick="setClockStyle('editorial')">2. Editorial Stacked</button>
+                <button class="chip-btn" onclick="setClockStyle('orbital')">3. Orbital Compact</button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px; color:var(--mist); margin-bottom:6px;">System States, Privacy & Accessibility (Sections 27–29, 43):</div>
+              <div class="chip-row">
+                <button class="chip-btn" onclick="toggleSimState('charging')">⚡ Charging Pulse (Frame 29)</button>
+                <button class="chip-btn" onclick="toggleSimState('lowBattery')">🔋 Low Battery 14% (Frame 30)</button>
+                <button class="chip-btn" onclick="toggleSimState('offline')">📡 Offline Mode (Frame 31)</button>
+                <button class="chip-btn" onclick="toggleSimState('privacy')">🛡️ Camera/Mic Privacy Chip (Frame 38)</button>
+                <button class="chip-btn" onclick="toggleSimState('largeText')">🔠 Large-Text 130% (Frame 40)</button>
+                <button class="chip-btn" onclick="toggleSimState('recovery')">🛠️ Crash Recovery Safe Mode (Frame 35)</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="deck-card">
+            <div class="deck-label">Active Frame & Architectural Annotation</div>
+            <div id="active-frame-title" class="deck-title">Frame 04 · Home Default Dark (Orbit Dawn)</div>
+            <p id="active-frame-desc" style="font-size:13px; color:var(--mist);">
+              Implemented in <code>:feature-home</code> (<code>AstraHomeScreen.kt</code>). Prioritizes identity, adaptive time/weather, 6 high-priority shortcuts, 2 folders, a 2-up intelligent widget stack, offline command search trigger, and a 5-icon spatial dock.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 8-SCREEN SIDE-BY-SIDE VISUAL REVIEW BOARD (SECTION 47) -->
+    <section id="tab-review-board" class="view-section">
+      <div class="deck-card" style="margin-bottom:24px;">
+        <div class="deck-label">Section 47 · Visual Review Board</div>
+        <div class="deck-title">8 Core Astra System Surfaces Side-by-Side</div>
+        <p style="font-size:13px; color:var(--mist);">
+          All eight core surfaces visibly share the same typography hierarchy, 3-tier surface material language (Solid, Soft Translucent, Clear Atmospheric), 12–32px corner logic, restrained cyan-violet accent spectrum, and rounded geometric iconography.
+        </p>
+      </div>
+      <div class="review-board-grid" id="review-board-container"></div>
+    </section>
+
+    <!-- SECTION 3: 40-FRAME VISUAL SCREEN INVENTORY (SECTION 45) -->
+    <section id="tab-inventory-40" class="view-section">
+      <div class="deck-card" style="margin-bottom:24px;">
+        <div class="deck-label">Section 45 · Complete 40-Frame Visual Screen Inventory</div>
+        <div class="deck-title">Click Any Frame to Launch in Interactive Phone Simulator</div>
+        <p style="font-size:13px; color:var(--mist);">
+          Every single one of the 40 required frames is defined in <code>AstraCanonicalFrame</code> (<code>:core-storage</code>) and inspectable both on Android and in this review portal.
+        </p>
+      </div>
+      <div class="frames-grid" id="frames-40-container"></div>
+    </section>
+
+    <!-- SECTION 4: CURATED WALLPAPER SYSTEM (SECTION 10) -->
+    <section id="tab-wallpapers" class="view-section">
+      <div class="deck-card">
+        <div class="deck-label">Section 10 · First-Class Wallpaper Collection</div>
+        <div class="deck-title">3 Hero Wallpapers + Light & Monolith Tonal Editions</div>
+        <p style="font-size:13px; color:var(--mist);">
+          Bundled in <code>core-design/src/main/res/drawable-nodpi/</code> and rendered by <code>AstraWallpaperSurface</code> with safe-zone luminance gradients and contrast-verified dynamic palette extraction.
+        </p>
+        <div class="wallpaper-showcase" id="wallpaper-showcase-grid"></div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: TOKENS, 18 COMPONENTS & ANDROID APK ARCHITECTURE -->
+    <section id="tab-tokens-apk" class="view-section">
+      <div class="deck-card" style="margin-bottom:22px;">
+        <div class="deck-label">Section 33 & 50 · Native Android Multi-Module Architecture</div>
+        <div class="deck-title">16 Gradle Modules (Kotlin + Jetpack Compose)</div>
+        <p style="font-size:13px; color:var(--mist); margin-bottom:14px;">
+          Built with Gradle 8.7, Android Gradle Plugin 8.5.2, Kotlin 1.9.24, and Jetpack Compose BOM 2024.06.00. Automated GitHub Actions workflow (<code>.github/workflows/build-apk.yml</code>) runs unit tests across all modules and packages both Debug and Signed Release APKs.
+        </p>
+        <div class="frames-grid">
+          <div class="frame-item-card"><div class="deck-label">:app</div><strong>Launcher Shell & Services</strong><p style="font-size:12px;color:var(--mist);">AstraLauncherActivity (CATEGORY_HOME), NotificationListenerService, AppWidgetProvider, Boot Receiver.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:core-design</div><strong>Tokens, Wallpapers & 18 Components</strong><p style="font-size:12px;color:var(--mist);">AstraPalette, AstraColorEngine, AstraTypography, AstraMotion, AstraBrandMark, AstraVectorIcon.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:core-platform</div><strong>Capability Matrix & Android APIs</strong><p style="font-size:12px;color:var(--mist);">RoleManager.ROLE_HOME, LauncherApps, AppWidgetHost #2026, CameraManager Torch, AudioManager, Settings.Panel.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:core-storage</div><strong>Local-First Persistence & Backup</strong><p style="font-size:12px;color:var(--mist);">ThemeSettings, HomeLayout, SearchPreferences, NotificationPreferences, ASTRA_BACKUP_V1 snapshot.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:core-performance</div><strong>Low-RAM & Visual Budget Engine</strong><p style="font-size:12px;color:var(--mist);">ActivityManager memory inspection, automatic blur/shader degradation, LRU icon cache.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:feature-home & :feature-widgets</div><strong>Home, Editor, Folders & 8 Widgets</strong><p style="font-size:12px;color:var(--mist);">Snap-grid Home Editor, renameable Folders, App Shortcuts popup, 8 first-party widgets + hosted widgets.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:feature-search & :feature-apps</div><strong>Offline Command Index & App Library</strong><p style="font-size:12px;color:var(--mist);">5-tier offline ranking, deterministic commands ('open YouTube', 'call Mum'), fast alphabet rail, Private Vault.</p></div>
+          <div class="frame-item-card"><div class="deck-label">:feature-lock-preview, :feature-notifications, :feature-controls, :feature-recents, :feature-personalization, :feature-settings, :feature-onboarding</div><strong>Full Continuum Surfaces</strong><p style="font-size:12px;color:var(--mist);">Lock/AOD, 3-tier Notification Shade, Spatial Control Center, Recents, Personalization Studio, 13-Section Settings, 6-Step Onboarding.</p></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const state = {
+      surface: 'home',
+      wallpaper: 'orbit_dawn',
+      isLight: false,
+      accent: '#7DD3FC',
+      clockStyle: 'minimal',
+      searchQuery: '',
+      charging: false,
+      lowBattery: false,
+      offline: false,
+      privacy: false,
+      largeText: false,
+      recovery: false,
+      torchOn: false
+    };
+
+    const wallpapers = [
+      { id: 'orbit_dawn', title: 'Orbit Dawn', file: '/wallpapers/wallpaper_orbit_dawn.jpg', lum: '22%', temp: '5800K', desc: 'Soft mineral-blue, muted indigo, pale silver and warm orbital arc' },
+      { id: 'nocturne_flow', title: 'Nocturne Flow', file: '/wallpapers/wallpaper_nocturne_flow.jpg', lum: '8%', temp: '6800K', desc: 'Deep graphite, smoked black and diagonal violet architectural glass' },
+      { id: 'glass_horizon', title: 'Glass Horizon', file: '/wallpapers/wallpaper_glass_horizon.jpg', lum: '84%', temp: '6200K', desc: 'Translucent architectural planes, frosted cyan, graphite and champagne' },
+      { id: 'morning_mist', title: 'Orbit Dawn · Light', file: '/wallpapers/wallpaper_morning_mist.jpg', lum: '91%', temp: '5400K', desc: 'Cloud-white, mist-silver and delicate mineral-cyan daylight arc' },
+      { id: 'graphite_monolith', title: 'Graphite Monolith', file: '/wallpapers/wallpaper_graphite_monolith.jpg', lum: '6%', temp: '6500K', desc: 'Matte anodized obsidian planes with razor-thin icy cyan rim-light' }
+    ];
+
+    const apps = [
+      { name: 'Phone', icon: '📞', cat: 'Communication', cmd: 'call Mum' },
+      { name: 'Messages', icon: '💬', cat: 'Communication', cmd: 'open Messages' },
+      { name: 'Camera', icon: '📷', cat: 'Media', cmd: 'open camera' },
+      { name: 'Browser', icon: '🌐', cat: 'Internet', cmd: 'open Browser' },
+      { name: 'Settings', icon: '⚙️', cat: 'System', cmd: 'find Settings' },
+      { name: 'Calendar', icon: '📅', cat: 'Productivity', cmd: 'open Calendar' },
+      { name: 'Clock', icon: '⏱️', cat: 'Productivity', cmd: 'start timer' },
+      { name: 'YouTube', icon: '▶️', cat: 'Media', cmd: 'open YouTube' }
+    ];
+
+    const frames40 = [
+      [1, "Splash / Brand Moment", "onboarding", "Foundations"],
+      [2, "First-Run Onboarding 01 · RoleManager.ROLE_HOME", "onboarding", "Onboarding"],
+      [3, "First-Run Onboarding 02 · Atmosphere Selection", "onboarding", "Onboarding"],
+      [4, "Home Default Dark (Orbit Dawn)", "home", "Home"],
+      [5, "Home Default Light (Morning Mist)", "home-light", "Home"],
+      [6, "Home Personalized (Nocturne Flow + Orbital Clock)", "home-personalized", "Home"],
+      [7, "Home Edit Mode (Live Snap Grid)", "home-edit", "Home"],
+      [8, "App Drawer / App Library", "apps", "Apps"],
+      [9, "Search Idle (Command Chips & Frequent)", "search", "Search"],
+      [10, "Search Typing (Live Ranked Results)", "search-typing", "Search"],
+      [11, "Search Result Selected (Keyboard Navigation)", "search-typing", "Search"],
+      [12, "Search Command Mode ('open YouTube')", "search-cmd", "Search"],
+      [13, "Notification Shade Collapsed", "notifications-collapsed", "Notifications"],
+      [14, "Notification Shade Expanded (3 Priority Tiers)", "notifications", "Notifications"],
+      [15, "Control Center Partial", "controls-partial", "Controls"],
+      [16, "Control Center Full (Spatial Control Plane)", "controls", "Controls"],
+      [17, "Recents Overview (Task Continuum)", "recents", "Recents"],
+      [18, "Settings Root (13 Main Sections)", "settings", "Settings"],
+      [19, "Settings Detail (Performance & RAM Budget)", "settings", "Settings"],
+      [20, "Personalization Studio (Live Phone Preview)", "personalize", "Personalization"],
+      [21, "Wallpaper Picker (Safe-Zone Luminance)", "personalize", "Personalization"],
+      [22, "Clock Picker (3 Signature Styles)", "personalize", "Personalization"],
+      [23, "Widget Picker (8 First-Party + AppWidgetHost)", "widgets", "Widgets"],
+      [24, "Icon Style Picker (4 Harmonized Modes)", "personalize", "Personalization"],
+      [25, "Permission Pre-Explanation", "notifications", "Permissions"],
+      [26, "System Permission Handoff (ROLE_HOME / Settings.Panel)", "controls", "Permissions"],
+      [27, "Permission Denied Fallback State", "notifications", "Permissions"],
+      [28, "Media Controls (Adaptive Album Tint)", "controls", "Media"],
+      [29, "Charging Experience (Orbital Pulse)", "charging", "System States"],
+      [30, "Low Battery State (14% Calm Power Mode)", "low-battery", "System States"],
+      [31, "Offline State ('Astra is offline.' Local Guarantee)", "offline", "System States"],
+      [32, "Loading Skeleton State", "home", "System States"],
+      [33, "Empty State", "home", "System States"],
+      [34, "Error State (Isolated Widget Timeout)", "home", "System States"],
+      [35, "Crash / Recovery Safe Mode", "recovery", "System States"],
+      [36, "Lock-Screen Concept (Adaptive Clock & Privacy)", "lock", "Lock & AOD"],
+      [37, "Always-On Display (AOD) Burn-In Shift", "aod", "Lock & AOD"],
+      [38, "Privacy Indicator State (CAM · MIC · LOC)", "privacy", "Privacy"],
+      [39, "Third-Party Widget Coexistence (AppWidgetHost #2026)", "widgets", "Widgets"],
+      [40, "Accessibility Large-Text Variant (130% + High Contrast)", "large-text", "Accessibility"]
+    ];
+
+    function renderClockHtml(isLock) {
+      if (state.clockStyle === 'editorial') {
+        return `
+          <div style="text-align:center; padding:8px 0;">
+            <div style="font-size:10px; letter-spacing:1px; color:${state.accent}; font-weight:600;">WEDNESDAY · OCT 7</div>
+            <div style="font-size:${isLock ? '62px' : '46px'}; font-weight:600; line-height:1.0;">09</div>
+            <div style="font-size:${isLock ? '62px' : '46px'}; font-weight:300; line-height:1.0; color:${state.accent};">41</div>
+            <div style="font-size:11px; opacity:0.8; margin-top:4px;">18°C · Clear Atmosphere</div>
+          </div>
+        `;
+      }
+      if (state.clockStyle === 'orbital') {
+        return `
+          <div class="astra-glass" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:28px; font-weight:600; line-height:1.1;">09:41</div>
+              <div style="font-size:10px; opacity:0.75;">WED, OCT 7 · ORBIT DAWN</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px; font-weight:600; color:${state.accent};">18°C</div>
+              <div style="font-size:10px; opacity:0.7;">Calm · AQI 14</div>
+            </div>
+          </div>
+        `;
+      }
+      return `
+        <div style="text-align:${isLock ? 'center' : 'left'}; padding:4px 0;">
+          <div style="font-size:11px; font-weight:600; color:${state.accent};">WEDNESDAY, OCT 7 · 18°C CLEAR</div>
+          <div style="font-size:${isLock ? '66px' : '50px'}; font-weight:300; letter-spacing:-1.5px; line-height:1.08;">09:41</div>
+        </div>
+      `;
+    }
+
+    function renderPhoneSurface() {
+      const screen = document.getElementById('sim-screen');
+      const body = document.getElementById('sim-body');
+      const dim = document.getElementById('sim-dim');
+
+      screen.style.backgroundImage = state.surface === 'aod'
+        ? 'none'
+        : `url('/wallpapers/wallpaper_${state.wallpaper}.jpg')`;
+      screen.style.backgroundColor = '#0A0B0D';
+      screen.className = 'phone-screen' + (state.isLight && state.surface !== 'aod' ? ' light-mode' : '');
+      screen.style.fontSize = state.largeText ? '118%' : '100%';
+
+      document.getElementById('sim-offline-pill').style.display = state.offline ? 'inline-block' : 'none';
+      document.getElementById('sim-privacy-pill').style.display = state.privacy ? 'inline-flex' : 'none';
+      document.getElementById('sim-battery-text').textContent = (state.charging ? '⚡ ' : '') + (state.lowBattery ? '14%' : '84%');
+
+      dim.style.background = ['search', 'notifications', 'controls', 'recents', 'personalize', 'widgets'].includes(state.surface)
+        ? 'rgba(8, 10, 14, 0.58)'
+        : 'linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.04) 35%, rgba(0,0,0,0.45) 100%)';
+
+      let banners = '';
+      if (state.charging) {
+        banners += `<div class="astra-glass" style="margin-bottom:8px; border-color:${state.accent}; display:flex; justify-content:space-between; align-items:center;">
+          <div><div style="font-size:10px; color:${state.accent}; font-weight:700;">⚡ ORBITAL FAST CHARGE</div><div style="font-size:12px;">84% · 24m to full</div></div>
+          <span style="font-size:11px; opacity:0.7; cursor:pointer;" onclick="toggleSimState('charging')">✕</span>
+        </div>`;
+      }
+      if (state.offline) {
+        banners += `<div class="astra-glass" style="margin-bottom:8px; border-color:#FBBF24;">
+          <div style="font-size:11px; color:#FBBF24; font-weight:700;">Astra is offline.</div>
+          <div style="font-size:10px; opacity:0.85;">App launch, local command search & widgets work 100% locally.</div>
+        </div>`;
+      }
+      if (state.lowBattery) {
+        banners += `<div class="astra-glass" style="margin-bottom:8px; border-color:#FBBF24;">
+          <div style="font-size:11px; color:#FBBF24; font-weight:700;">Low Battery (14%) · Calm Power Mode</div>
+          <div style="font-size:10px; opacity:0.85;">Blur & live orbital shaders reduced to preserve task completion.</div>
+        </div>`;
+      }
+      if (state.recovery) {
+        banners += `<div class="astra-glass" style="margin-bottom:8px; border-color:#F87171;">
+          <div style="font-size:10px; color:#F87171; font-weight:700;">CRASH / RECOVERY SAFE MODE</div>
+          <div style="font-size:11px;">Layout anomaly isolated. Tap to reset safe defaults.</div>
+        </div>`;
+      }
+
+      if (state.surface === 'aod') {
+        body.innerHTML = `
+          <div style="margin:auto; text-align:center; color:#D8DBE1; opacity:0.82;">
+            <div style="font-size:10px; letter-spacing:1.2px; color:#7DD3FC;">ASTRA AOD · BURN-IN SAFE SHIFT</div>
+            <div style="font-size:64px; font-weight:200; margin:8px 0;">09:41</div>
+            <div style="font-size:11px; opacity:0.7;">WEDNESDAY, OCT 7 · 84%</div>
+            <div style="margin-top:16px; display:inline-block; padding:5px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.18); font-size:11px;">
+              2 Priority Notifications
+            </div>
+            <div style="margin-top:28px;">
+              <button class="chip-btn" onclick="setSurface('lock')">Wake to Lock Screen →</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'lock') {
+        body.innerHTML = `
+          <div>
+            <div style="text-align:center; margin-bottom:10px;">
+              <span style="font-size:10px; padding:4px 10px; border-radius:999px; background:rgba(23,26,32,0.65); border:1px solid rgba(255,255,255,0.14);">
+                18°C · ${state.wallpaper.replace('_',' ').toUpperCase()}
+              </span>
+            </div>
+            ${renderClockHtml(true)}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size:10px; opacity:0.75; letter-spacing:0.6px;">PRIORITY NOTIFICATIONS · PRIVACY REDACTED</div>
+            <div class="astra-glass" onclick="setSurface('home')" style="cursor:pointer;">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};">
+                <span>MESSAGES · ELENA ROSTOVA</span><span>2m ago</span>
+              </div>
+              <div style="font-size:12px; font-weight:600; margin-top:2px;">Private content hidden while locked</div>
+            </div>
+            <div class="astra-glass" onclick="setSurface('home')" style="cursor:pointer;">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};">
+                <span>CALENDAR · STUDIO 4B</span><span>12m ago</span>
+              </div>
+              <div style="font-size:12px; font-weight:600; margin-top:2px;">Design Gate Review in 15 mins</div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px;">
+            <button class="chip-btn" onclick="state.torchOn=!state.torchOn; renderPhoneSurface();">🔦</button>
+            <div onclick="setSurface('home')" style="cursor:pointer; text-align:center;">
+              <div style="width:48px; height:48px; margin:0 auto; border-radius:999px; border:1.5px solid ${state.accent}; display:flex; align-items:center; justify-content:center; background:rgba(17,19,24,0.8);">🔓</div>
+              <div style="font-size:10px; margin-top:4px; opacity:0.8;">Tap to Unlock</div>
+            </div>
+            <button class="chip-btn" onclick="setSurface('home')">📷</button>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'search' || state.surface === 'search-typing' || state.surface === 'search-cmd') {
+        const q = state.surface === 'search-cmd' ? 'open YouTube' : (state.surface === 'search-typing' ? 'Cam' : state.searchQuery);
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">OFFLINE COMMAND PALETTE</div>
+                <div style="font-size:16px; font-weight:600;">Global Search</div>
+              </div>
+              <button class="chip-btn" onclick="setSurface('home')">✕</button>
+            </div>
+            <input
+              type="text"
+              value="${q}"
+              placeholder="Search apps or type 'open camera', 'call Mum'..."
+              oninput="state.searchQuery=this.value; state.surface='search'; renderPhoneSurface();"
+              style="width:100%; padding:11px 14px; border-radius:999px; border:1px solid ${state.accent}; background:rgba(17,19,24,0.92); color:#F5F6F8; font-size:12px; outline:none;"
+            />
+            <div class="chip-row">
+              <span class="chip-btn" style="font-size:10px; padding:4px 9px;" onclick="state.searchQuery='open YouTube'; renderPhoneSurface();">open YouTube</span>
+              <span class="chip-btn" style="font-size:10px; padding:4px 9px;" onclick="state.searchQuery='turn on Wi-Fi'; renderPhoneSurface();">turn on Wi-Fi</span>
+              <span class="chip-btn" style="font-size:10px; padding:4px 9px;" onclick="state.searchQuery='call Mum'; renderPhoneSurface();">call Mum</span>
+            </div>
+            <div class="astra-glass" style="border-color:${state.accent}; cursor:pointer;" onclick="setSurface('home')">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">INSTANT DETERMINISTIC COMMAND · ENTER ↵</div>
+              <div style="font-size:13px; font-weight:600; margin-top:2px;">${q ? 'Execute: ' + q : 'Launch Camera (Exact & Frequent Match)'}</div>
+              <div style="font-size:11px; opacity:0.75;">100% local index · 0ms network dependency</div>
+            </div>
+            <div style="font-size:10px; opacity:0.7; margin-top:4px;">RANKED APPLICATIONS (↑↓ KEYBOARD NAVIGABLE)</div>
+            ${apps.slice(0, 4).map((a, idx) => `
+              <div class="astra-glass" style="padding:9px 12px; display:flex; justify-content:space-between; align-items:center; ${idx===0 ? 'border-color:'+state.accent : ''}" onclick="setSurface('home')">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span>${a.icon}</span>
+                  <div>
+                    <div style="font-size:12px; font-weight:600;">${a.name}</div>
+                    <div style="font-size:10px; opacity:0.7;">${a.cat} · ${idx===0 ? 'Exact Match' : 'Frequently Used'}</div>
+                  </div>
+                </div>
+                <span style="font-size:10px; color:${state.accent};">${idx===0 ? 'Selected ↵' : 'Open'}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'apps') {
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">ASTRA APP LIBRARY</div>
+                <div style="font-size:16px; font-weight:600;">All Apps & Categories</div>
+              </div>
+              <button class="chip-btn" onclick="setSurface('home')">✕</button>
+            </div>
+            <div class="chip-row">
+              <span class="chip-btn active" style="font-size:10px; padding:4px 10px;">All Apps</span>
+              <span class="chip-btn" style="font-size:10px; padding:4px 10px;">Categories</span>
+              <span class="chip-btn" style="font-size:10px; padding:4px 10px;">Favorites</span>
+              <span class="chip-btn" style="font-size:10px; padding:4px 10px;">🔒 Private Vault</span>
+            </div>
+            <div style="font-size:10px; opacity:0.75;">SUGGESTED & FREQUENT</div>
+            <div class="app-grid-4">
+              ${apps.map(a => `
+                <div class="app-icon-tile" onclick="setSurface('home')">
+                  <div class="app-icon-box">${a.icon}</div>
+                  <div class="app-icon-label">${a.name}</div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="astra-glass" style="margin-top:6px;">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">INTELLIGENT CATEGORY · PRODUCTIVITY</div>
+              <div style="font-size:11px; margin-top:4px; opacity:0.85;">Calendar · Clock & Timer · Calculator · Files</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'notifications' || state.surface === 'notifications-collapsed') {
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">NOTIFICATION STREAM</div>
+                <div style="font-size:16px; font-weight:600;">Priority Grouped Shade</div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="chip-btn" onclick="setSurface('controls')">Controls</button>
+                <button class="chip-btn" onclick="setSurface('home')">✕</button>
+              </div>
+            </div>
+            <div class="astra-glass" style="border-color:${state.accent};">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">PERMISSION PRE-EXPLANATION (SEC 24)</div>
+              <div style="font-size:11px; margin-top:2px;">Grant NotificationListenerService access for live ranking. If declined, Home & Search work normally.</div>
+            </div>
+            <div style="font-size:10px; color:${state.accent}; font-weight:700;">1. URGENT & PRIORITY</div>
+            <div class="astra-glass">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};"><span>MESSAGES · +1 GROUPED</span><span>2m ago</span></div>
+              <div style="font-size:12px; font-weight:600;">Elena Rostova</div>
+              <div style="font-size:11px; opacity:0.85;">Brought the frosted glass samples for the review board.</div>
+            </div>
+            <div style="font-size:10px; opacity:0.7;">2. REGULAR UPDATES</div>
+            <div class="astra-glass">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};"><span>ASTRA SYSTEM</span><span>18m ago</span></div>
+              <div style="font-size:12px; font-weight:600;">Atmosphere Synced to Orbit Dawn</div>
+              <div style="font-size:11px; opacity:0.85;">Contrast ratio verified at 9.4:1 AAA.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'controls' || state.surface === 'controls-partial') {
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">SPATIAL CONTROL PLANE</div>
+                <div style="font-size:16px; font-weight:600;">Connected · Astra-5G</div>
+              </div>
+              <button class="chip-btn" onclick="setSurface('home')">✕</button>
+            </div>
+            <div class="widget-pair">
+              <div class="astra-glass" style="border-color:${state.accent};">
+                <div style="font-size:12px; font-weight:600;">📶 Wi-Fi ↗</div>
+                <div style="font-size:10px; color:${state.accent};">System Panel Handoff</div>
+              </div>
+              <div class="astra-glass" style="border-color:${state.accent};">
+                <div style="font-size:12px; font-weight:600;">🎧 Bluetooth ↗</div>
+                <div style="font-size:10px; color:${state.accent};">Spatial Buds</div>
+              </div>
+              <div class="astra-glass">
+                <div style="font-size:12px; font-weight:600;">📡 Cellular 5G ↗</div>
+                <div style="font-size:10px; opacity:0.75;">Internet Panel</div>
+              </div>
+              <div class="astra-glass" style="cursor:pointer; ${state.torchOn ? 'border-color:'+state.accent : ''}" onclick="state.torchOn=!state.torchOn; renderPhoneSurface();">
+                <div style="font-size:12px; font-weight:600;">🔦 Flashlight</div>
+                <div style="font-size:10px; color:${state.accent};">${state.torchOn ? 'Active (CameraManager)' : 'Direct Hardware API'}</div>
+              </div>
+            </div>
+            <div class="astra-glass">
+              <div style="display:flex; justify-content:space-between; font-size:11px;"><span>☀️ Display Luminance</span><span>72%</span></div>
+              <div style="height:5px; background:#20242C; border-radius:999px; margin-top:6px;"><div style="width:72%; height:100%; background:${state.accent}; border-radius:999px;"></div></div>
+            </div>
+            <div class="astra-glass">
+              <div style="display:flex; justify-content:space-between; font-size:11px;"><span>🔊 Spatial Audio Volume</span><span>58%</span></div>
+              <div style="height:5px; background:#20242C; border-radius:999px; margin-top:6px;"><div style="width:58%; height:100%; background:${state.accent}; border-radius:999px;"></div></div>
+            </div>
+            <div class="astra-glass" style="background:linear-gradient(135deg, rgba(17,19,24,0.92), rgba(125,211,252,0.22));">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">NOW PLAYING · ADAPTIVE ARTWORK TINT</div>
+              <div style="font-size:13px; font-weight:600;">Orbital Resonance (Nocturne Mix)</div>
+              <div style="font-size:11px; opacity:0.8;">Solaris Ensemble · 01:48 / 04:16</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'recents') {
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">MULTITASKING CONTINUUM</div>
+                <div style="font-size:16px; font-weight:600;">Recent Tasks</div>
+              </div>
+              <button class="chip-btn" onclick="setSurface('home')">✕</button>
+            </div>
+            <div class="astra-glass" style="border-color:${state.accent}; cursor:pointer;" onclick="setSurface('home')">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};"><span>📷 CAMERA · CURRENT FOCUS</span><span>1m ago</span></div>
+              <div style="font-size:13px; font-weight:600; margin-top:4px;">4K Studio Viewfinder · 24mm f/1.8</div>
+              <div style="font-size:10px; opacity:0.75; margin-top:6px;">Tap to restore · Split-Screen Ready</div>
+            </div>
+            <div class="astra-glass" style="cursor:pointer;" onclick="setSurface('home')">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};"><span>💬 MESSAGES</span><span>4m ago</span></div>
+              <div style="font-size:13px; font-weight:600; margin-top:4px;">Thread with Elena Rostova · 2 attachments</div>
+            </div>
+            <div class="astra-glass" style="cursor:pointer;" onclick="setSurface('home')">
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:${state.accent};"><span>🌐 BROWSER</span><span>14m ago</span></div>
+              <div style="font-size:13px; font-weight:600; margin-top:4px;">Astra Design Token & Contrast Spec</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'personalize' || state.surface === 'widgets') {
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">PERSONALIZATION STUDIO</div>
+                <div style="font-size:16px; font-weight:600;">Atmosphere & Widgets</div>
+              </div>
+              <button class="chip-btn" onclick="setSurface('home')">Done</button>
+            </div>
+            <div class="astra-glass" style="border-color:${state.accent};">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">5 SIGNATURE THEME PRESETS</div>
+              <div class="chip-row" style="margin-top:6px;">
+                <span class="chip-btn" style="font-size:10px; padding:4px 8px;" onclick="setWallpaper('orbit_dawn', false, '#7DD3FC')">Astral</span>
+                <span class="chip-btn" style="font-size:10px; padding:4px 8px;" onclick="setWallpaper('graphite_monolith', false, '#38BDF8')">Graphite</span>
+                <span class="chip-btn" style="font-size:10px; padding:4px 8px;" onclick="setWallpaper('morning_mist', true, '#0284C7')">Morning</span>
+                <span class="chip-btn" style="font-size:10px; padding:4px 8px;" onclick="setWallpaper('nocturne_flow', false, '#A78BFA')">Nocturne</span>
+                <span class="chip-btn" style="font-size:10px; padding:4px 8px;" onclick="setWallpaper('glass_horizon', true, '#0284C7')">Glass Horizon</span>
+              </div>
+            </div>
+            <div class="astra-glass">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">FIRST-PARTY & HOSTED WIDGETS (SEC 20)</div>
+              <div style="font-size:11px; margin-top:4px;">• Atmospheric Weather (2×1)<br>• Next Up Calendar Agenda (2×1)<br>• Power & Thermal Telemetry (2×1)<br>• Third-Party Android AppWidgetHost #2026</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'settings') {
+        body.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-size:10px; color:${state.accent}; font-weight:700;">SOLID SURFACE FAMILY (SEC 6.1A)</div>
+                <div style="font-size:16px; font-weight:600;">Astra Settings (13 Sections)</div>
+              </div>
+              <button class="chip-btn" onclick="setSurface('home')">✕</button>
+            </div>
+            <div class="astra-solid" style="border-color:${state.accent};">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">ANDROID ROLE_HOME STATUS</div>
+              <div style="font-size:12px; font-weight:600;">Default Home Role Ready (API 29+)</div>
+            </div>
+            ${[
+              "1. Personalization · Presets & Wallpapers",
+              "2. Home Screen · Grid, Dock & Folders",
+              "3. Lock Screen & AOD · Clocks & Privacy",
+              "4. Global Search · Local Offline Index",
+              "5. Notifications · Priority Stream",
+              "8. Performance · Low-RAM Visual Budget",
+              "10. Accessibility · Large Text & Contrast",
+              "12. Backup & Recovery · ASTRA_BACKUP_V1"
+            ].map(s => `
+              <div class="astra-solid" style="padding:8px 12px; font-size:11px; font-weight:500; cursor:pointer;" onclick="setSurface('personalize')">${s}</div>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      if (state.surface === 'onboarding') {
+        body.innerHTML = `
+          <div style="margin:auto; text-align:center; display:flex; flex-direction:column; gap:12px;">
+            <div style="font-size:10px; color:${state.accent}; font-weight:700;">STEP 1–6 · CINEMATIC ONBOARDING (SEC 25)</div>
+            <div style="font-size:26px; font-weight:600;">Welcome to Astra</div>
+            <div style="font-size:12px; opacity:0.85;">One coherent visual world connecting wallpaper, lock, home, offline command search, notifications, and spatial controls.</div>
+            <div class="astra-glass" style="text-align:left;">
+              <div style="font-size:11px; font-weight:600; color:${state.accent};">✓ RoleManager.ROLE_HOME Integration</div>
+              <div style="font-size:11px; opacity:0.8; margin-top:2px;">Requests default Android Home launcher role cleanly without dark patterns.</div>
+            </div>
+            <button class="chip-btn active" onclick="setSurface('home')">Enter Astra Home →</button>
+          </div>
+        `;
+        return;
+      }
+
+      // Default: HOME (or HOME EDIT MODE)
+      body.innerHTML = `
+        <div>
+          ${banners}
+          ${renderClockHtml(false)}
+          ${state.surface === 'home-edit' ? `
+            <div class="astra-glass" style="margin:8px 0; border-color:${state.accent};">
+              <div style="font-size:10px; color:${state.accent}; font-weight:700;">HOME EDITOR · SNAP GRID ACTIVE (SEC 40)</div>
+              <div style="font-size:11px; margin-top:2px;">Tap to adjust Wallpaper, Widgets, 4×5 / 5×5 Grid, Icon Scale & Clock Style.</div>
+            </div>
+          ` : ''}
+          <div class="app-grid-4" style="margin-top:10px;">
+            ${apps.slice(0, 4).map(a => `
+              <div class="app-icon-tile" onclick="setSurface('search')">
+                <div class="app-icon-box">${a.icon}</div>
+                <div class="app-icon-label">${a.name}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="widget-pair" style="margin-top:10px;">
+            <div class="astra-glass" onclick="setSurface('widgets')" style="cursor:pointer;">
+              <div style="font-size:9px; color:${state.accent}; font-weight:700;">ATMOSPHERE</div>
+              <div style="font-size:20px; font-weight:600; margin:2px 0;">18°C</div>
+              <div style="font-size:10px; opacity:0.8;">Clear Sky · UV 2 Low</div>
+            </div>
+            <div class="astra-glass" onclick="setSurface('widgets')" style="cursor:pointer;">
+              <div style="font-size:9px; color:${state.accent}; font-weight:700;">NEXT UP</div>
+              <div style="font-size:12px; font-weight:600; margin:2px 0;">Design Gate Review</div>
+              <div style="font-size:10px; opacity:0.8;">10:00 · Studio 4B</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="astra-glass" style="border-radius:999px; padding:9px 14px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="setSurface('search')">
+            <span style="font-size:11px; opacity:0.85;">🔍 Search apps or run command ('open camera')...</span>
+            <span style="font-size:11px; color:${state.accent};">⌘K</span>
+          </div>
+          <div class="dock-bar">
+            ${apps.slice(0, 5).map(a => `
+              <div class="app-icon-box" style="width:42px; height:42px; border-radius:13px; cursor:pointer;" onclick="setSurface('apps')" title="${a.name}">${a.icon}</div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function setSurface(surface) {
+      state.surface = surface;
+      renderPhoneSurface();
+    }
+
+    function setWallpaper(wpId, isLight, accent) {
+      state.wallpaper = wpId;
+      state.isLight = isLight;
+      state.accent = accent;
+      renderPhoneSurface();
+    }
+
+    function setClockStyle(style) {
+      state.clockStyle = style;
+      renderPhoneSurface();
+    }
+
+    function toggleSimState(key) {
+      state[key] = !state[key];
+      renderPhoneSurface();
+    }
+
+    function switchMainTab(tabId, btn) {
+      document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    function populateReviewBoardAndInventory() {
+      const reviewSurfaces = [
+        { title: "1. Astra Lock Screen", wp: "orbit_dawn", sub: "Adaptive Clock & Redacted Priority Stream", body: "09:41 · Minimal Numeral · 2 Priority Notifications · Torch & Camera Quick Affordances" },
+        { title: "2. Astra Home", wp: "orbit_dawn", sub: "Calm Priority Grid & Intelligent Widgets", body: "Large Clock/Weather · 6 Priority Apps · Weather & Agenda Widgets · 5-App Spatial Dock" },
+        { title: "3. Astra Search", wp: "nocturne_flow", sub: "Offline Command Palette & 5-Tier Ranking", body: "Instant Focus · 'open YouTube' / 'call Mum' · Exact, Recent, Frequent & Fuzzy Match" },
+        { title: "4. Astra Control Center", wp: "nocturne_flow", sub: "Spatial Control Plane & Honest Handoffs", body: "Wi-Fi / Cellular Panel Handoff · Direct CameraManager Torch · Luminance & Audio Sliders · Adaptive Media" },
+        { title: "5. Astra Notifications", wp: "orbit_dawn", sub: "3-Tier Priority Stream & Consent Card", body: "Urgent, Regular & Silent Collapsible Buckets · NotificationListenerService Integration" },
+        { title: "6. Astra Recents", wp: "graphite_monolith", sub: "Workspace Continuum Cards", body: "Elevated Task Cards · Split-Screen Handoff · Truthful Platform Capability Notice" },
+        { title: "7. Astra Settings", wp: "graphite_monolith", sub: "Solid Surface Family · 13 Main Sections", body: "RoleManager.ROLE_HOME · Low-RAM Visual Budget · Privacy & Accessibility · Local Snapshot Backup" },
+        { title: "8. Astra Personalization", wp: "glass_horizon", sub: "Live Environment Preview Studio", body: "5 Signature Presets (Astral, Graphite, Morning, Nocturne, Glass Horizon) · 3 Clock Families" }
+      ];
+
+      document.getElementById('review-board-container').innerHTML = reviewSurfaces.map(r => `
+        <div class="mini-phone" style="background-image:url('/wallpapers/wallpaper_${r.wp}.jpg');">
+          <div style="position:absolute; inset:0; background:rgba(10,11,13,0.48);"></div>
+          <div style="position:relative; z-index:2;">
+            <div style="font-size:10px; color:#7DD3FC; font-weight:700;">SECTION 47 · COHESIVE SYSTEM LANGUAGE</div>
+            <div style="font-size:18px; font-weight:600; margin-top:2px;">${r.title}</div>
+            <div style="font-size:11px; opacity:0.8;">${r.sub}</div>
+          </div>
+          <div class="astra-glass" style="position:relative; z-index:2;">
+            <div style="font-size:12px; font-weight:500;">${r.body}</div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('frames-40-container').innerHTML = frames40.map(([num, title, target, cat]) => `
+        <div class="frame-item-card" onclick="launchFrame(${num}, '${title}', '${target}')">
+          <div class="deck-label">Frame ${String(num).padStart(2, '0')} · ${cat}</div>
+          <div style="font-size:14px; font-weight:600;">${title}</div>
+          <div style="font-size:11px; color:var(--accent-primary); margin-top:6px;">Inspect in Simulator →</div>
+        </div>
+      `).join('');
+
+      document.getElementById('wallpaper-showcase-grid').innerHTML = wallpapers.map(w => `
+        <div class="wp-card" onclick="setWallpaper('${w.id}', ${w.id==='morning_mist'||w.id==='glass_horizon'}, '#7DD3FC'); switchMainTab('simulator', document.querySelector('.nav-tab'));">
+          <div class="wp-preview" style="background-image:url('${w.file}');">
+            <div class="astra-glass" style="padding:6px 10px; font-size:10px;">Upper Luminance ${w.lum} · ${w.temp}</div>
+            <div class="astra-glass" style="padding:10px;">
+              <div style="font-size:14px; font-weight:600;">${w.title}</div>
+              <div style="font-size:11px; opacity:0.85;">${w.desc}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function launchFrame(num, title, target) {
+      switchMainTab('simulator', document.querySelector('.nav-tab'));
+      document.getElementById('active-frame-title').textContent = `Frame ${String(num).padStart(2, '0')} · ${title}`;
+      state.charging = false; state.lowBattery = false; state.offline = false; state.privacy = false; state.largeText = false; state.recovery = false;
+      if (target === 'home-light') {
+        setWallpaper('morning_mist', true, '#0284C7');
+        setSurface('home');
+      } else if (target === 'home-personalized') {
+        setWallpaper('nocturne_flow', false, '#A78BFA');
+        setClockStyle('orbital');
+        setSurface('home');
+      } else if (target === 'charging') {
+        state.charging = true; setSurface('home');
+      } else if (target === 'low-battery') {
+        state.lowBattery = true; setSurface('home');
+      } else if (target === 'offline') {
+        state.offline = true; setSurface('home');
+      } else if (target === 'privacy') {
+        state.privacy = true; setSurface('home');
+      } else if (target === 'large-text') {
+        state.largeText = true; setSurface('home');
+      } else if (target === 'recovery') {
+        state.recovery = true; setSurface('home');
+      } else {
+        setSurface(target);
+      }
+    }
+
+    populateReviewBoardAndInventory();
+    renderPhoneSurface();
+  </script>
+</body>
+</html>
