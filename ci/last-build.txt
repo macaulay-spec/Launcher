@@ -1,4 +1,8 @@
 status: SUCCESS
-apk: app/build/outputs/apk/debug/app-debug.apk
-size:  bytes
-sha256: 
+pwd: /home/runner/work/Launcher/Launcher
+--- apk files found ---
+--- outputs tree ---
+app/build/outputs
+app/build/outputs/logs
+app/build/outputs/logs/manifest-merger-debug-report.txt
+apk_path: NONE
