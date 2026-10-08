@@ -1,8 +1,8 @@
 package com.astra.launcher.core.storage
 
 /**
- * Real Android Launcher Domain & 2D Coordinate Workspace Models.
- * Zero fake catalogs, zero hardcoded clock/weather/notifications/tasks (Section 4, 5, 13, 14, 15, 25, 29, 32).
+ * Astra Launcher Complete Product, UX & System Experience Domain Models (Rebuild Specification Sections 1–50).
+ * Zero fake data, zero ads, zero telemetry.
  */
 
 enum class AstraThemePreset(
@@ -17,34 +17,34 @@ enum class AstraThemePreset(
     ASTRAL(
         id = "astral",
         displayName = "Orbit",
-        subtitle = "Dark spatial environment with restrained mineral-cyan orbital light",
+        subtitle = "Deep spatial obsidian with restrained mineral-cyan light",
         defaultWallpaper = AstraWallpaperId.ORBIT_DAWN,
         isLightDefault = false,
         primaryAccentHex = 0xFF7DD3FC,
-        secondaryAccentHex = 0xFFA78BFA
+        secondaryAccentHex = 0xFF38BDF8
     ),
     NOCTURNE(
         id = "nocturne",
-        displayName = "Nocturne Flow",
-        subtitle = "Deep charcoal and smoked architectural glass with subtle violet thread",
+        displayName = "Nocturne",
+        subtitle = "Architectural matte charcoal and smoked glass",
         defaultWallpaper = AstraWallpaperId.NOCTURNE_FLOW,
         isLightDefault = false,
-        primaryAccentHex = 0xFFA78BFA,
+        primaryAccentHex = 0xFF93C5FD,
         secondaryAccentHex = 0xFF60A5FA
     ),
     GLASS_HORIZON(
         id = "glass_horizon",
         displayName = "Horizon",
-        subtitle = "Abstract horizon light-field with dark lower workspace region",
+        subtitle = "Warm horizon light-field with calm dark lower workspace",
         defaultWallpaper = AstraWallpaperId.GLASS_HORIZON,
         isLightDefault = false,
         primaryAccentHex = 0xFF67E8F9,
-        secondaryAccentHex = 0xFFC4B5FD
+        secondaryAccentHex = 0xFF93C5FD
     ),
     GRAPHITE(
         id = "graphite",
-        displayName = "Graphite Monolith",
-        subtitle = "High-contrast matte graphite with low-overhead solid surfaces",
+        displayName = "Graphite",
+        subtitle = "Ultra-clean solid graphite optimized for low-memory hardware",
         defaultWallpaper = AstraWallpaperId.GRAPHITE_MONOLITH,
         isLightDefault = false,
         primaryAccentHex = 0xFF94A3B8,
@@ -52,17 +52,59 @@ enum class AstraThemePreset(
     ),
     MORNING(
         id = "morning",
-        displayName = "Daylight Orbit",
-        subtitle = "High-legibility light atmosphere for bright outdoor environments",
+        displayName = "Daylight",
+        subtitle = "High-contrast daylight environment for outdoor readability",
         defaultWallpaper = AstraWallpaperId.MORNING_MIST,
         isLightDefault = true,
         primaryAccentHex = 0xFF0284C7,
-        secondaryAccentHex = 0xFF6366F1
+        secondaryAccentHex = 0xFF2563EB
     );
 
     companion object {
         fun fromId(id: String): AstraThemePreset =
             entries.firstOrNull { it.id == id } ?: ASTRAL
+    }
+}
+
+/**
+ * First-Run & Home Layout Density Modes (Rebuild Section 2 & 3).
+ */
+enum class HomeDensityMode(
+    val id: String,
+    val title: String,
+    val description: String,
+    val defaultColumns: Int,
+    val defaultRows: Int,
+    val initialWorkspaceCount: Int
+) {
+    MINIMAL(
+        id = "minimal",
+        title = "Minimal",
+        description = "Generous negative space, large adaptive clock, and 4 essential apps",
+        defaultColumns = 4,
+        defaultRows = 5,
+        initialWorkspaceCount = 4
+    ),
+    BALANCED(
+        id = "balanced",
+        title = "Balanced",
+        description = "Harmonious spatial clock, contextual suggestions, and 8 curated apps",
+        defaultColumns = 4,
+        defaultRows = 5,
+        initialWorkspaceCount = 8
+    ),
+    DENSE(
+        id = "dense",
+        title = "Dense",
+        description = "Compact 5×6 workspace grid for power users with more apps per page",
+        defaultColumns = 5,
+        defaultRows = 6,
+        initialWorkspaceCount = 10
+    );
+
+    companion object {
+        fun fromId(id: String): HomeDensityMode =
+            entries.firstOrNull { it.id == id } ?: BALANCED
     }
 }
 
@@ -89,7 +131,7 @@ enum class AstraWallpaperId(
         id = "orbit_dawn",
         title = "Orbit",
         familyName = "ORBIT",
-        familyDescription = "Atmospheric orbital geometry, dark spatial environment, large negative space",
+        familyDescription = "Atmospheric orbital geometry, dark spatial environment, generous negative space",
         upperRegionLuminance = 0.22f,
         recommendedAccentHex = 0xFF7DD3FC,
         secondaryAtmosphereHex = 0xFFFDE68A
@@ -98,16 +140,16 @@ enum class AstraWallpaperId(
         id = "nocturne_flow",
         title = "Nocturne Flow",
         familyName = "NOCTURNE FLOW",
-        familyDescription = "Dark architectural fluid forms, deep charcoal and black foundation",
+        familyDescription = "Dark architectural fluid forms on a deep charcoal and black foundation",
         upperRegionLuminance = 0.08f,
-        recommendedAccentHex = 0xFFA78BFA,
+        recommendedAccentHex = 0xFF93C5FD,
         secondaryAtmosphereHex = 0xFF60A5FA
     ),
     GLASS_HORIZON(
         id = "glass_horizon",
         title = "Horizon",
         familyName = "HORIZON",
-        familyDescription = "Abstract horizon light-field environment with dark lower region",
+        familyDescription = "Abstract horizon light-field environment with dark lower workspace region",
         upperRegionLuminance = 0.78f,
         recommendedAccentHex = 0xFF38BDF8,
         secondaryAtmosphereHex = 0xFF818CF8
@@ -119,16 +161,16 @@ enum class AstraWallpaperId(
         familyDescription = "Light-aware orbital composition with high-contrast upper safe zone",
         upperRegionLuminance = 0.90f,
         recommendedAccentHex = 0xFF0284C7,
-        secondaryAtmosphereHex = 0xFF4F46E5
+        secondaryAtmosphereHex = 0xFF2563EB
     ),
     GRAPHITE_MONOLITH(
         id = "graphite_monolith",
         title = "Graphite Monolith",
         familyName = "NOCTURNE FLOW",
-        familyDescription = "Ultra-calm low-memory architectural graphite with icy cyan edge",
+        familyDescription = "Ultra-calm low-memory architectural graphite with subtle mineral edge",
         upperRegionLuminance = 0.06f,
         recommendedAccentHex = 0xFF38BDF8,
-        secondaryAtmosphereHex = 0xFF94A3B8
+        secondaryAccentHex = 0xFF94A3B8
     );
 
     companion object {
@@ -138,9 +180,9 @@ enum class AstraWallpaperId(
 }
 
 enum class AstraClockStyle(val id: String, val label: String, val description: String) {
-    MINIMAL_NUMERAL("minimal_numeral", "Minimal Numeral", "Balanced optical numerals with live date and alarm status"),
+    MINIMAL_NUMERAL("minimal_numeral", "Spatial Numeral", "Balanced optical numerals with live date, context, and alarm status"),
     EDITORIAL_STACKED("editorial_stacked", "Editorial Stacked", "Two-line vertical time with calm negative space"),
-    ORBITAL_COMPACT("orbital_compact", "Orbital Compact", "Compact time and date header giving maximum room to workspace");
+    ORBITAL_COMPACT("orbital_compact", "Compact Header", "Clean single-line time and date giving maximum workspace area");
 
     companion object {
         fun fromId(id: String): AstraClockStyle =
@@ -149,15 +191,14 @@ enum class AstraClockStyle(val id: String, val label: String, val description: S
 }
 
 /**
- * Icon Treatment (Section 6):
- * Never replaces real app icons with generic glyphs; applies container shape, normalization,
- * or optional monochrome tint over the real application icon drawable.
+ * Icon Treatment (Rebuild Section 2 & 9):
+ * Preserves real application icons while offering Original, Astra Adaptive, or Monochrome treatments.
  */
 enum class AstraIconStyle(val id: String, val label: String, val description: String) {
-    ASTRA_SQUIRCLE("astra_squircle", "Astra Squircle", "Normalized real app icon inside a subtle squircle container"),
-    CIRCLE("circle", "Adaptive Circle", "Normalized circular mask over the real application icon"),
-    MONOCHROME_TINT("monochrome_tint", "Atmospheric Monochrome", "Uses Android 13+ monochrome icon layer or luminance-mapped real icon"),
-    ORIGINAL("original", "Unmasked Original", "Unmodified real application launcher icon with optical scale normalization");
+    ASTRA_SQUIRCLE("astra_squircle", "Astra Adaptive", "Real app icon harmonized inside a disciplined squircle container"),
+    ORIGINAL("original", "Original", "Unmodified real application launcher icon with optical scale normalization"),
+    MONOCHROME_TINT("monochrome_tint", "Monochrome", "Uses Android 13+ monochrome layer or tonal luminance-mapped real icon"),
+    CIRCLE("circle", "Adaptive Circle", "Normalized circular container around the real application icon");
 
     companion object {
         fun fromId(id: String): AstraIconStyle =
@@ -205,9 +246,6 @@ data class ThemeSettings(
     val highContrastMode: Boolean = false
 )
 
-/**
- * 2D Launcher Coordinate Item Types (Section 4).
- */
 enum class WorkspaceItemType(val id: String) {
     APP("app"),
     SHORTCUT("shortcut"),
@@ -227,10 +265,6 @@ data class FolderMemberApp(
     val label: String
 )
 
-/**
- * Genuine 2D Coordinate Grid Workspace Item (Section 4).
- * Every item on the Home workspace is positioned at (page, cellX, cellY) with (spanX, spanY).
- */
 data class WorkspaceCellItem(
     val id: String,
     val page: Int,
@@ -260,11 +294,17 @@ data class DockSlotItem(
 
 data class HomeLayout(
     val isInitialized: Boolean = false,
+    val hasCompletedFirstRunSetup: Boolean = false,
+    val densityMode: HomeDensityMode = HomeDensityMode.BALANCED,
     val pageCount: Int = 2,
     val gridColumns: Int = 4,
     val gridRows: Int = 5,
+    val dockEnabled: Boolean = true,
     val dockSlotCount: Int = 5,
+    val showDockSearchButton: Boolean = false,
+    val showPageIndicator: Boolean = true,
     val showClockOnWorkspace: Boolean = true,
+    val showContextualSuggestionsOnHome: Boolean = true,
     val lockWorkspaceLayout: Boolean = false,
     val items: List<WorkspaceCellItem> = emptyList(),
     val dockItems: List<DockSlotItem> = emptyList(),
@@ -284,11 +324,13 @@ data class SearchPreferences(
 
 data class NotificationPreferences(
     val showAppBadgeDots: Boolean = true,
-    val showNotificationCountOnMenu: Boolean = true
+    val showNotificationCountOnMenu: Boolean = true,
+    val showHomeNotificationPill: Boolean = true
 )
 
 enum class SwipeDownAction(val id: String, val label: String) {
-    SEARCH("search", "Open Astra Launcher Search"),
+    SEARCH("search", "Open Astra Universal Search"),
+    ASTRA_NOTIFICATIONS("astra_notifications", "Open Astra Notification & Control Surface"),
     ANDROID_NOTIFICATION_SHADE("android_shade", "Expand Android System Notification Shade");
 
     companion object {
@@ -297,31 +339,54 @@ enum class SwipeDownAction(val id: String, val label: String) {
     }
 }
 
+enum class DoubleTapAction(val id: String, val label: String) {
+    SEARCH("search", "Open Astra Search"),
+    CONTROL_SURFACE("control_surface", "Open Astra Control & Status Surface"),
+    APP_DISCOVERY("app_discovery", "Open App Discovery"),
+    NONE("none", "Disabled");
+
+    companion object {
+        fun fromId(id: String): DoubleTapAction =
+            entries.firstOrNull { it.id == id } ?: CONTROL_SURFACE
+    }
+}
+
 data class GesturePreferences(
     val swipeUpAction: String = "app_drawer",
     val swipeDownAction: SwipeDownAction = SwipeDownAction.SEARCH,
-    val doubleTapAction: String = "search",
+    val doubleTapAction: DoubleTapAction = DoubleTapAction.CONTROL_SURFACE,
     val longPressAction: String = "home_editor",
     val pinchAction: String = "home_editor",
     val hapticsEnabled: Boolean = true
 )
+
+enum class AppSortOrder(val id: String, val label: String) {
+    MOST_USED("most_used", "Most Used"),
+    ALPHABETICAL("alphabetical", "A–Z");
+
+    companion object {
+        fun fromId(id: String): AppSortOrder =
+            entries.firstOrNull { it.id == id } ?: MOST_USED
+    }
+}
 
 data class PerformancePreferences(
     val animationsEnabled: Boolean = true,
     val reducedMotion: Boolean = false,
     val blurEnabled: Boolean = true,
     val lowEndDeviceModeOverride: Boolean = false,
-    val showDrawerCategories: Boolean = false,
-    val showDrawerRecentRow: Boolean = true
+    val showDrawerCategories: Boolean = true,
+    val showDrawerRecentRow: Boolean = true,
+    val appSortOrder: AppSortOrder = AppSortOrder.MOST_USED
 )
 
 enum class AppCategory(val id: String, val label: String) {
     COMMUNICATION("communication", "Communication"),
-    MEDIA("media", "Media & Photo"),
+    MEDIA("media", "Entertainment & Media"),
     PRODUCTIVITY("productivity", "Productivity"),
-    UTILITIES("utilities", "Tools & System"),
+    UTILITIES("utilities", "Utilities & System"),
     INTERNET("internet", "Browsing & Social"),
-    GAMES_OTHER("other", "Apps & Games");
+    GAMES_OTHER("other", "Games & Other");
 
     companion object {
         fun fromId(id: String): AppCategory =
@@ -339,10 +404,6 @@ data class AstraShortcutItem(
     val isPinned: Boolean = false
 )
 
-/**
- * Real Installed Application Entry (Section 5 & 8).
- * Populated exclusively from Android's LauncherApps / PackageManager.
- */
 data class AstraAppEntry(
     val packageName: String,
     val componentName: String,
@@ -367,12 +428,15 @@ data class AstraNotificationEntry(
     val title: String,
     val content: String,
     val postTimeMillis: Long,
-    val isClearable: Boolean = true
+    val isClearable: Boolean = true,
+    val isHighPriority: Boolean = false
 )
 
 data class AstraCapabilityReport(
     val canBeDefaultHome: Boolean = true,
     val isCurrentlyDefaultHome: Boolean = false,
+    val currentDefaultHomePackage: String = "",
+    val isHiOsDetectedOnDevice: Boolean = false,
     val hasNotificationAccess: Boolean = false,
     val canHostWidgets: Boolean = true,
     val canReadPackages: Boolean = true,
@@ -384,7 +448,10 @@ data class AstraDeviceStatus(
     val batteryPercent: Int = -1,
     val isCharging: Boolean = false,
     val isLowBattery: Boolean = false,
+    val isWifiConnected: Boolean = false,
     val isOffline: Boolean = false,
     val lowMemoryPressure: Boolean = false,
-    val nextAlarmLabel: String? = null
+    val nextAlarmLabel: String? = null,
+    val manufacturer: String = "",
+    val model: String = ""
 )

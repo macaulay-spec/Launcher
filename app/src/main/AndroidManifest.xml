@@ -29,8 +29,8 @@
 
         <!--
             PRIMARY REAL ANDROID HOME LAUNCHER ACTIVITY
-            Declares CATEGORY_HOME + CATEGORY_DEFAULT + singleTask + stateNotNeeded + clearTaskOnLaunch
-            so Android routes the system Home button directly to Astra Launcher.
+            Declares CATEGORY_HOME + CATEGORY_DEFAULT + singleTask + stateNotNeeded + clearTaskOnLaunch + resumeWhilePausing
+            so Android and OEM systems (including TECNO/HiOS) route the system Home button directly to Astra Launcher.
         -->
         <activity
             android:name=".AstraLauncherActivity"
@@ -38,12 +38,13 @@
             android:launchMode="singleTask"
             android:clearTaskOnLaunch="true"
             android:stateNotNeeded="true"
+            android:resumeWhilePausing="true"
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|uiMode|density">
 
-            <intent-filter>
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -58,7 +59,7 @@
 
         <!--
             OPTIONAL NOTIFICATION LISTENER SERVICE
-            Used strictly for real notification badge counts when user grants access.
+            Used strictly for real notification badge counts and the Astra Notification surface when user grants access.
         -->
         <service
             android:name=".AstraNotificationListenerService"
@@ -72,7 +73,6 @@
 
         <!--
             EXPORTED FIRST-PARTY ANDROID APPWIDGET PROVIDER
-            Can be hosted both inside Astra's AppWidgetHost and on any other Android launcher.
         -->
         <receiver
             android:name=".AstraOrbitalClockWidgetProvider"

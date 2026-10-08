@@ -18,6 +18,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,11 +40,14 @@ import com.astra.launcher.core.platform.InstalledWidgetProvider
 import com.astra.launcher.core.platform.LaunchResult
 import com.astra.launcher.core.storage.AstraAppEntry
 import com.astra.launcher.core.storage.AstraStorageRepository
+import com.astra.launcher.core.storage.DoubleTapAction
 import com.astra.launcher.core.storage.SwipeDownAction
 import com.astra.launcher.core.storage.WorkspaceCellItem
 import com.astra.launcher.feature.apps.AstraAppDrawerOverlay
 import com.astra.launcher.feature.home.AstraAppContextMenuSheet
+import com.astra.launcher.feature.home.AstraFirstRunSetupOverlay
 import com.astra.launcher.feature.home.AstraFolderOverlay
+import com.astra.launcher.feature.home.AstraNotificationAndControlOverlay
 import com.astra.launcher.feature.home.AstraWorkspaceLayer
 import com.astra.launcher.feature.personalization.AstraPersonalizationOverlay
 import com.astra.launcher.feature.search.AstraSearchOverlay
@@ -58,10 +62,14 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Primary Real Android Home Launcher Activity (`com.astra.launcher.AstraLauncherActivity`).
  *
- * Implements the genuine Android Launcher runtime loop (Sections 1, 3, 4, 8, 13, 34, 47):
- * ANDROID SYSTEM -> ASTRA DEFAULT HOME ROLE -> ASTRA LAUNCHER WORKSPACE ->
- * USER LAUNCHES THIRD-PARTY APP -> ANDROID STARTS THIRD-PARTY APP ->
- * USER PRESSES HOME -> ANDROID DELIVERS onNewIntent(CATEGORY_HOME) -> ASTRA WORKSPACE.
+ * Implements the complete Astra Product, UX, and System Experience (Rebuild Sections 1–50):
+ * - Real Default Home Role (`CATEGORY_HOME` + `CATEGORY_DEFAULT` + `RoleManager.ROLE_HOME` + `singleTask`)
+ * - 6-Step Visual First-Run Setup ("Your phone, redesigned.")
+ * - Persistent 2D Coordinate Home Workspace with Adaptive Clock, Contextual Header & Dock
+ * - Modern Application Discovery (Recently Used, Favorites, Contextual Suggestions, Smart Categories, All Apps)
+ * - System-Level Universal Search with Natural-Language Intent Handoff
+ * - Real Android `AppWidgetHost` Widget Hosting & `LauncherApps` Real Icon Pipeline
+ * - Truthful Control & Notification Surface
  */
 class AstraLauncherActivity : ComponentActivity() {
 
@@ -80,18 +88,16 @@ class AstraLauncherActivity : ComponentActivity() {
     lateinit var performanceManager: AstraPerformanceManager
         private set
 
-    // Signal incremented whenever Android delivers ACTION_MAIN / CATEGORY_HOME via onNewIntent
     private val _homeIntentSignal = MutableStateFlow(0L)
     val homeIntentSignal: StateFlow<Long> = _homeIntentSignal.asStateFlow()
 
-    // Pending widget provider awaiting bind permission or configuration activity completion
     private var pendingWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var pendingWidgetProvider: InstalledWidgetProvider? = null
 
     private val requestHomeRoleLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        // Role state re-evaluated on resume
+        // Re-inspected on resume
     }
 
     private val bindWidgetPermissionLauncher = registerForActivityResult(
@@ -170,13 +176,6 @@ class AstraLauncherActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /**
-     * Critical Real Launcher Behavior (Section 3 & 40):
-     * When Astra is the default Home app (`singleTask`) and the user presses the Android Home button
-     * from any app or while an Astra overlay (Drawer, Search, Folder, Settings) is open,
-     * Android delivers `onNewIntent` with `ACTION_MAIN` / `CATEGORY_HOME`.
-     * We increment `_homeIntentSignal` so `AstraLauncherRoot` collapses all overlays back to the persistent Workspace.
-     */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -219,7 +218,6 @@ class AstraLauncherActivity : ComponentActivity() {
                 val bindIntent = widgetHostManager.buildBindPermissionIntent(widgetId, provider.providerComponent)
                 bindWidgetPermissionLauncher.launch(bindIntent)
             } catch (_: Throwable) {
-                // Save widget slot so user can rebind from workspace recovery card
                 storageRepository.addWidgetToWorkspace(
                     appWidgetId = widgetId,
                     providerComponent = provider.providerComponent.flattenToString(),
@@ -273,15 +271,6 @@ class AstraLauncherActivity : ComponentActivity() {
     }
 }
 
-/**
- * Persistent Root Launcher Composable (`AstraLauncherRoot` — Section 34 & 47).
- *
- * Architecture:
- * - `AstraWorkspaceLayer` (2D Paged Workspace + PageIndicator + Dock) is ALWAYS the persistent base layer.
- * - Overlays (`AppDrawerOverlay`, `SearchOverlay`, `FolderOverlay`, `WidgetPickerSheet`,
- *   `ContextMenuSheet`, `PersonalizationOverlay`, `SettingsOverlay`) sit above the persistent workspace
- *   only when invoked, and dismiss cleanly back to the workspace on Back or Home intent.
- */
 @Composable
 fun AstraLauncherRoot(
     storageRepository: AstraStorageRepository,
@@ -305,27 +294,28 @@ fun AstraLauncherRoot(
 
     val installedApps by packageRepository.installedApps.collectAsState()
     val lastLaunchError by packageRepository.lastLaunchError.collectAsState()
+    val activeNotifications by AstraNotificationStreamBus.notifications.collectAsState()
 
-    // Overlay visibility states (NOT a root screen replacement switch!)
     var isAppDrawerOpen by remember { mutableStateOf(false) }
     var isSearchOpen by remember { mutableStateOf(false) }
     var isWidgetPickerOpen by remember { mutableStateOf(false) }
     var isPersonalizationOpen by remember { mutableStateOf(false) }
     var isSettingsOpen by remember { mutableStateOf(false) }
+    var isNotificationAndControlOpen by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
     var openFolderId by remember { mutableStateOf<String?>(null) }
     var contextMenuTarget by remember { mutableStateOf<Pair<AstraAppEntry, WorkspaceCellItem?>?>(null) }
     var movingWorkspaceItem by remember { mutableStateOf<WorkspaceCellItem?>(null) }
     var defaultHomeBannerDismissed by remember { mutableStateOf(false) }
 
-    // Collapse all overlays when Android delivers a Home button intent (`onNewIntent`)
-    androidx.compose.runtime.LaunchedEffect(homeResetTick) {
+    LaunchedEffect(homeResetTick) {
         if (homeResetTick > 0L) {
             isAppDrawerOpen = false
             isSearchOpen = false
             isWidgetPickerOpen = false
             isPersonalizationOpen = false
             isSettingsOpen = false
+            isNotificationAndControlOpen = false
             isEditMode = false
             openFolderId = null
             contextMenuTarget = null
@@ -336,9 +326,18 @@ fun AstraLauncherRoot(
     val capabilities = remember(
         installedApps.size,
         isSettingsOpen,
+        isNotificationAndControlOpen,
         homeResetTick
     ) {
         capabilityManager.inspectCapabilities()
+    }
+
+    val deviceStatus = remember(
+        installedApps.size,
+        isNotificationAndControlOpen,
+        homeResetTick
+    ) {
+        capabilityManager.inspectDeviceStatus()
     }
 
     val palette = remember(themeSettings) {
@@ -352,17 +351,18 @@ fun AstraLauncherRoot(
         )
     }
 
-    val anyOverlayOpen = isAppDrawerOpen ||
+    val anyOverlayOpen = !homeLayout.hasCompletedFirstRunSetup ||
+        isAppDrawerOpen ||
         isSearchOpen ||
         isWidgetPickerOpen ||
         isPersonalizationOpen ||
         isSettingsOpen ||
+        isNotificationAndControlOpen ||
         openFolderId != null ||
         contextMenuTarget != null ||
         isEditMode ||
         movingWorkspaceItem != null
 
-    // Back gesture dismisses the topmost overlay and NEVER kills the Home launcher activity
     BackHandler(enabled = true) {
         when {
             contextMenuTarget != null -> contextMenuTarget = null
@@ -370,6 +370,7 @@ fun AstraLauncherRoot(
             isWidgetPickerOpen -> isWidgetPickerOpen = false
             isPersonalizationOpen -> isPersonalizationOpen = false
             isSettingsOpen -> isSettingsOpen = false
+            isNotificationAndControlOpen -> isNotificationAndControlOpen = false
             isSearchOpen -> isSearchOpen = false
             isAppDrawerOpen -> isAppDrawerOpen = false
             movingWorkspaceItem != null -> movingWorkspaceItem = null
@@ -381,9 +382,9 @@ fun AstraLauncherRoot(
         val result = packageRepository.launchApp(app)
         if (result is LaunchResult.Success) {
             storageRepository.recordAppLaunch(app.componentName)
-            // Dismiss overlays so when user presses Home later, Astra returns to clean resting Workspace
             isAppDrawerOpen = false
             isSearchOpen = false
+            isNotificationAndControlOpen = false
             openFolderId = null
             contextMenuTarget = null
         }
@@ -397,13 +398,15 @@ fun AstraLauncherRoot(
         modifier = Modifier.fillMaxSize()
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 1. PERSISTENT ROOT: 2D Coordinate Grid Workspace + PageIndicator + Dock
+            // 1. PERSISTENT ROOT: 2D Coordinate Grid Workspace + Contextual Header + Dock
             AstraWorkspaceLayer(
                 installedApps = installedApps,
                 homeLayout = homeLayout,
                 themeSettings = themeSettings,
                 capabilities = capabilities,
-                showDefaultHomeBanner = !defaultHomeBannerDismissed,
+                deviceStatus = deviceStatus,
+                activeNotifications = if (notifPrefs.showHomeNotificationPill) activeNotifications else emptyList(),
+                showDefaultHomeBanner = !defaultHomeBannerDismissed && homeLayout.hasCompletedFirstRunSetup,
                 corruptedWorkspaceRecovered = corruptedRecovered,
                 lastLaunchError = lastLaunchError,
                 isEditMode = isEditMode,
@@ -419,17 +422,29 @@ fun AstraLauncherRoot(
                     when (gesturePrefs.swipeDownAction) {
                         SwipeDownAction.ANDROID_NOTIFICATION_SHADE -> {
                             val expanded = systemController.expandSystemNotificationShade()
-                            if (!expanded) isSearchOpen = true
+                            if (!expanded) isNotificationAndControlOpen = true
+                        }
+                        SwipeDownAction.ASTRA_NOTIFICATIONS -> {
+                            isNotificationAndControlOpen = true
                         }
                         SwipeDownAction.SEARCH -> {
                             isSearchOpen = true
                         }
                     }
                 },
+                onDoubleTapTrigger = {
+                    when (gesturePrefs.doubleTapAction) {
+                        DoubleTapAction.SEARCH -> isSearchOpen = true
+                        DoubleTapAction.CONTROL_SURFACE -> isNotificationAndControlOpen = true
+                        DoubleTapAction.APP_DISCOVERY -> isAppDrawerOpen = true
+                        DoubleTapAction.NONE -> {}
+                    }
+                },
                 onOpenSearch = { isSearchOpen = true },
                 onOpenSettings = { isSettingsOpen = true },
                 onOpenPersonalization = { isPersonalizationOpen = true },
                 onOpenWidgetPicker = { isWidgetPickerOpen = true },
+                onOpenNotificationAndControlSurface = { isNotificationAndControlOpen = true },
                 onToggleEditMode = { enabled ->
                     isEditMode = enabled
                     if (!enabled) movingWorkspaceItem = null
@@ -465,7 +480,7 @@ fun AstraLauncherRoot(
                 }
             )
 
-            // 2. OVERLAY: App Drawer / App Library
+            // 2. OVERLAY: Modern Application Discovery Drawer
             AnimatedVisibility(
                 visible = isAppDrawerOpen,
                 enter = slideInVertically(initialOffsetY = { it / 3 }) + fadeIn(),
@@ -495,7 +510,7 @@ fun AstraLauncherRoot(
                 )
             }
 
-            // 3. OVERLAY: Keyboard-First Universal Search
+            // 3. OVERLAY: System-Level Universal Search
             AnimatedVisibility(
                 visible = isSearchOpen,
                 enter = fadeIn(),
@@ -552,7 +567,36 @@ fun AstraLauncherRoot(
                 )
             }
 
-            // 4. OVERLAY: Folder Expansion Modal
+            // 4. OVERLAY: Truthful Notification & Control Surface
+            AnimatedVisibility(
+                visible = isNotificationAndControlOpen,
+                enter = slideInVertically(initialOffsetY = { -it / 4 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -it / 4 }) + fadeOut()
+            ) {
+                AstraNotificationAndControlOverlay(
+                    deviceStatus = deviceStatus,
+                    capabilities = capabilities,
+                    notifications = activeNotifications,
+                    palette = palette,
+                    onOpenWifiPanel = { systemController.openWifiSettings() },
+                    onOpenBluetoothSettings = { systemController.openBluetoothSettings() },
+                    onOpenDisplaySettings = { systemController.openDisplaySettings() },
+                    onOpenSoundSettings = { systemController.openSoundSettings() },
+                    onExpandAndroidNotificationShade = {
+                        isNotificationAndControlOpen = false
+                        systemController.expandSystemNotificationShade()
+                    },
+                    onExpandAndroidQuickSettings = {
+                        isNotificationAndControlOpen = false
+                        systemController.expandSystemQuickSettings()
+                    },
+                    onOpenNotificationAccessSettings = { systemController.openNotificationListenerSettings() },
+                    onClearNotifications = { AstraNotificationStreamBus.clearAllClearable() },
+                    onClose = { isNotificationAndControlOpen = false }
+                )
+            }
+
+            // 5. OVERLAY: Spatial Folder Expansion
             val activeFolder = remember(homeLayout.items, openFolderId) {
                 openFolderId?.let { id -> homeLayout.items.firstOrNull { it.id == id } }
             }
@@ -578,14 +622,18 @@ fun AstraLauncherRoot(
                 )
             }
 
-            // 5. OVERLAY: App Long-Press Context Menu (Real Shortcuts, Move, Pin, App Info, Uninstall)
+            // 6. OVERLAY: Long-Press Application Context Menu
             contextMenuTarget?.let { (targetApp, wsItem) ->
                 val isHidden = targetApp.componentName in homeLayout.hiddenComponents
+                val isFavorite = targetApp.componentName in homeLayout.favoriteComponents
                 AstraAppContextMenuSheet(
                     app = targetApp,
                     workspaceItem = wsItem,
                     isHidden = isHidden,
+                    isFavorite = isFavorite,
                     palette = palette,
+                    onOpenApp = { launchRealApplication(targetApp) },
+                    onToggleFavorite = { storageRepository.toggleFavoriteApp(targetApp.componentName) },
                     onLaunchShortcut = { shortcut -> packageRepository.launchAppShortcut(shortcut) },
                     onPinToWorkspace = {
                         storageRepository.pinAppToWorkspace(targetApp)
@@ -616,7 +664,7 @@ fun AstraLauncherRoot(
                 )
             }
 
-            // 6. OVERLAY: Android AppWidgetManager Widget Picker
+            // 7. OVERLAY: Android AppWidgetManager Widget Picker
             if (isWidgetPickerOpen) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -634,7 +682,7 @@ fun AstraLauncherRoot(
                 }
             }
 
-            // 7. OVERLAY: Personalization Studio
+            // 8. OVERLAY: Wallpaper & Personalization Studio
             AnimatedVisibility(
                 visible = isPersonalizationOpen,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(),
@@ -679,7 +727,7 @@ fun AstraLauncherRoot(
                 )
             }
 
-            // 8. OVERLAY: 14-Category Launcher Settings
+            // 9. OVERLAY: Dedicated Astra Settings Surface
             AnimatedVisibility(
                 visible = isSettingsOpen,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(),
@@ -711,6 +759,9 @@ fun AstraLauncherRoot(
                         isSettingsOpen = false
                         isPersonalizationOpen = true
                     },
+                    onReopenFirstRunSetup = {
+                        storageRepository.reopenFirstRunSetup()
+                    },
                     onRescanPackages = {
                         packageRepository.refreshInstalledAppsAsync(
                             usageLookup = { storageRepository.getUsageScore(it) },
@@ -720,6 +771,33 @@ fun AstraLauncherRoot(
                     },
                     onResetDefaults = { storageRepository.resetToSafeDefaults() },
                     onClose = { isSettingsOpen = false }
+                )
+            }
+
+            // 10. FIRST-RUN SETUP EXPERIENCE ("Your phone, redesigned.")
+            AnimatedVisibility(
+                visible = !homeLayout.hasCompletedFirstRunSetup,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                AstraFirstRunSetupOverlay(
+                    initialPreset = themeSettings.themePreset,
+                    initialDensity = homeLayout.densityMode,
+                    initialIconStyle = themeSettings.iconStyle,
+                    initialSwipeDown = gesturePrefs.swipeDownAction,
+                    capabilities = capabilities,
+                    palette = palette,
+                    onRequestDefaultHomeRole = onRequestDefaultHomeRole,
+                    onOpenNotificationAccessSettings = { systemController.openNotificationListenerSettings() },
+                    onCompleteSetup = { preset, density, iconStyle, swipeDown ->
+                        storageRepository.completeFirstRunSetup(
+                            preset = preset,
+                            densityMode = density,
+                            iconStyle = iconStyle,
+                            swipeDownAction = swipeDown,
+                            installedApps = installedApps
+                        )
+                    }
                 )
             }
         }

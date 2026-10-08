@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -34,6 +36,7 @@ import com.astra.launcher.core.design.AstraPalette
 import com.astra.launcher.core.design.AstraShapes
 import com.astra.launcher.core.design.AstraSurfaceCard
 import com.astra.launcher.core.design.AstraTypography
+import com.astra.launcher.core.storage.AppSortOrder
 import com.astra.launcher.core.storage.AstraAppEntry
 import com.astra.launcher.core.storage.AstraCapabilityReport
 import com.astra.launcher.core.storage.AstraClockStyle
@@ -41,7 +44,9 @@ import com.astra.launcher.core.storage.AstraIconStyle
 import com.astra.launcher.core.storage.AstraThemeMode
 import com.astra.launcher.core.storage.AstraThemePreset
 import com.astra.launcher.core.storage.AstraWallpaperId
+import com.astra.launcher.core.storage.DoubleTapAction
 import com.astra.launcher.core.storage.GesturePreferences
+import com.astra.launcher.core.storage.HomeDensityMode
 import com.astra.launcher.core.storage.HomeLayout
 import com.astra.launcher.core.storage.NotificationPreferences
 import com.astra.launcher.core.storage.PerformancePreferences
@@ -51,24 +56,21 @@ import com.astra.launcher.core.storage.ThemeSettings
 import com.astra.launcher.core.storage.WallpaperSource
 
 /**
- * All 14 Official Astra Launcher Settings Sections (Section 25).
- * Every control modifies persisted launcher state immediately.
+ * Dedicated Astra Settings Surface (Rebuild Sections 7, 13, 14, 44, 46, 47).
+ * Organized into the exact categories defined in Rebuild Section 13:
+ * Home, Appearance, Search, Gestures, Apps, Notifications, Widgets, Performance, About Astra.
+ * Zero advertising settings, zero telemetry.
  */
 enum class AstraSettingsSection(val id: String, val title: String) {
-    APPEARANCE("appearance", "1. Appearance"),
-    HOME_SCREEN("home_screen", "2. Home Screen"),
-    APP_DRAWER("app_drawer", "3. App Drawer"),
-    ICONS("icons", "4. Icons"),
-    WIDGETS("widgets", "5. Widgets"),
-    DOCK("dock", "6. Dock"),
-    SEARCH("search", "7. Search"),
-    GESTURES("gestures", "8. Gestures"),
-    WALLPAPER("wallpaper", "9. Wallpaper"),
-    NOTIFICATIONS("notifications", "10. Notifications"),
-    PRIVACY("privacy", "11. Privacy"),
-    PERFORMANCE("performance", "12. Performance"),
-    ACCESSIBILITY("accessibility", "13. Accessibility"),
-    ABOUT_ASTRA("about", "14. About Astra")
+    HOME("home", "Home"),
+    APPEARANCE("appearance", "Appearance"),
+    SEARCH("search", "Search"),
+    GESTURES("gestures", "Gestures"),
+    APPS("apps", "Apps"),
+    NOTIFICATIONS("notifications", "Notifications"),
+    WIDGETS("widgets", "Widgets"),
+    PERFORMANCE("performance", "Performance"),
+    ABOUT_ASTRA("about", "About Astra")
 }
 
 @Composable
@@ -92,12 +94,13 @@ fun AstraSettingsOverlay(
     onOpenNotificationAccessSettings: () -> Unit,
     onOpenWidgetPicker: () -> Unit,
     onOpenPersonalizationStudio: () -> Unit,
+    onReopenFirstRunSetup: () -> Unit,
     onRescanPackages: () -> Unit,
     onResetDefaults: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedSection by remember { mutableStateOf(AstraSettingsSection.APPEARANCE) }
+    var selectedSection by remember { mutableStateOf(AstraSettingsSection.HOME) }
 
     Box(
         modifier = modifier
@@ -110,7 +113,6 @@ fun AstraSettingsOverlay(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,12 +120,12 @@ fun AstraSettingsOverlay(
             ) {
                 Column {
                     Text(
-                        text = "Astra Launcher Settings",
+                        text = "Astra Settings",
                         style = AstraTypography.TitleL,
                         color = palette.primaryText
                     )
                     Text(
-                        text = "14 persistent launcher configuration categories",
+                        text = "Personalize your Astra Home environment",
                         style = AstraTypography.Caption,
                         color = palette.secondaryText
                     )
@@ -134,7 +136,7 @@ fun AstraSettingsOverlay(
                     color = palette.primaryAccent
                 ) {
                     Text(
-                        text = "Home",
+                        text = "Done",
                         style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                         color = palette.obsidian0,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
@@ -144,7 +146,6 @@ fun AstraSettingsOverlay(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 14 Section Selector Rail
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 2.dp)
@@ -168,7 +169,7 @@ fun AstraSettingsOverlay(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 28.dp)
             ) {
-                // Default Home Role Banner
+                // Default Home Role & HiOS Status Card
                 item(key = "role_home_status") {
                     AstraSurfaceCard(
                         palette = palette,
@@ -185,14 +186,17 @@ fun AstraSettingsOverlay(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = if (capabilities.isCurrentlyDefaultHome)
-                                        "Default Home App: Active (ROLE_HOME)"
+                                        "Default Home: Astra Launcher ✓"
                                     else
-                                        "Astra is not yet set as Default Home App",
+                                        "Astra is not currently Default Home",
                                     style = AstraTypography.SectionHeader,
                                     color = if (capabilities.isCurrentlyDefaultHome) palette.successTone else palette.warningTone
                                 )
                                 Text(
-                                    text = "Pressing the Android Home button returns directly to Astra when set as Default Home.",
+                                    text = if (capabilities.currentDefaultHomePackage.isNotBlank())
+                                        "Active Home role holder: ${capabilities.currentDefaultHomePackage}"
+                                    else
+                                        "Pressing the Android Home button returns directly to Astra when set as Default Home.",
                                     style = AstraTypography.Caption,
                                     color = palette.secondaryText
                                 )
@@ -203,7 +207,7 @@ fun AstraSettingsOverlay(
                                 color = palette.primaryAccent
                             ) {
                                 Text(
-                                    text = if (capabilities.isCurrentlyDefaultHome) "Change" else "Set Default",
+                                    text = if (capabilities.isCurrentlyDefaultHome) "Verify" else "Set Default",
                                     style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                                     color = palette.obsidian0,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -214,10 +218,100 @@ fun AstraSettingsOverlay(
                 }
 
                 when (selectedSection) {
+                    AstraSettingsSection.HOME -> {
+                        item {
+                            SettingsCard(title = "Home Layout, Grid, Dock & Pages", palette = palette) {
+                                Text("Home Density Preset", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    HomeDensityMode.entries.forEach { mode ->
+                                        AstraCategoryChip(
+                                            label = mode.title,
+                                            selected = homeLayout.densityMode == mode,
+                                            palette = palette,
+                                            onClick = {
+                                                onUpdateHomeLayout {
+                                                    it.copy(
+                                                        densityMode = mode,
+                                                        gridColumns = mode.defaultColumns,
+                                                        gridRows = mode.defaultRows
+                                                    )
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text("Grid Dimensions", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(4 to 5, 4 to 6, 5 to 5, 5 to 6).forEach { (c, r) ->
+                                        AstraCategoryChip(
+                                            label = "${c}×${r}",
+                                            selected = homeLayout.gridColumns == c && homeLayout.gridRows == r,
+                                            palette = palette,
+                                            onClick = { onUpdateHomeLayout { it.copy(gridColumns = c, gridRows = r) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text("Dock Capacity", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(4, 5, 6).forEach { count ->
+                                        AstraCategoryChip(
+                                            label = "$count Apps",
+                                            selected = homeLayout.dockSlotCount == count,
+                                            palette = palette,
+                                            onClick = { onUpdateHomeLayout { it.copy(dockSlotCount = count) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ToggleRow(
+                                    label = "Show Persistent Home Dock",
+                                    checked = homeLayout.dockEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateHomeLayout { it.copy(dockEnabled = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Show Dock App Labels",
+                                    checked = themeSettings.showDockLabels,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateTheme { it.copy(showDockLabels = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Show Page Indicator Dots",
+                                    checked = homeLayout.showPageIndicator,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateHomeLayout { it.copy(showPageIndicator = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Show Adaptive Clock & Contextual Status on Page 1",
+                                    checked = homeLayout.showClockOnWorkspace,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateHomeLayout { it.copy(showClockOnWorkspace = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Show App Icon Labels",
+                                    checked = themeSettings.showIconLabels,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateTheme { it.copy(showIconLabels = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Lock Home Layout (Prevent accidental moves)",
+                                    checked = homeLayout.lockWorkspaceLayout,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateHomeLayout { it.copy(lockWorkspaceLayout = v) } }
+                                )
+                            }
+                        }
+                    }
+
                     AstraSettingsSection.APPEARANCE -> {
                         item {
-                            SettingsCard(title = "1. Appearance & Atmosphere", palette = palette) {
-                                Text("Theme Preset", style = AstraTypography.Caption, color = palette.secondaryText)
+                            SettingsCard(title = "Wallpaper, Theme, Icons & Typography", palette = palette) {
+                                Text("Astra Atmosphere Preset", style = AstraTypography.Caption, color = palette.secondaryText)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     items(AstraThemePreset.entries, key = { it.id }) { preset ->
@@ -238,240 +332,8 @@ fun AstraSettingsOverlay(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Text("Theme Mode", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Text("Wallpaper Family (Orbit · Nocturne Flow · Horizon)", style = AstraTypography.Caption, color = palette.secondaryText)
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    AstraThemeMode.entries.forEach { mode ->
-                                        AstraCategoryChip(
-                                            label = mode.label,
-                                            selected = themeSettings.themeMode == mode,
-                                            palette = palette,
-                                            onClick = { onUpdateTheme { it.copy(themeMode = mode) } }
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(10.dp))
-                                ActionChipButton("Open Personalization Studio", palette, onOpenPersonalizationStudio)
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.HOME_SCREEN -> {
-                        item {
-                            SettingsCard(title = "2. Home Screen Workspace", palette = palette) {
-                                ToggleRow(
-                                    label = "Show Live Clock & Date on Page 1",
-                                    checked = homeLayout.showClockOnWorkspace,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateHomeLayout { it.copy(showClockOnWorkspace = v) } }
-                                )
-                                ToggleRow(
-                                    label = "Lock Workspace Layout (Prevent accidental moves)",
-                                    checked = homeLayout.lockWorkspaceLayout,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateHomeLayout { it.copy(lockWorkspaceLayout = v) } }
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Grid Dimensions", style = AstraTypography.Caption, color = palette.secondaryText)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    listOf(4 to 5, 4 to 6, 5 to 5, 5 to 6).forEach { (c, r) ->
-                                        AstraCategoryChip(
-                                            label = "${c}×${r}",
-                                            selected = homeLayout.gridColumns == c && homeLayout.gridRows == r,
-                                            palette = palette,
-                                            onClick = { onUpdateHomeLayout { it.copy(gridColumns = c, gridRows = r) } }
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Clock Typography Style", style = AstraTypography.Caption, color = palette.secondaryText)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    items(AstraClockStyle.entries, key = { it.id }) { cs ->
-                                        AstraCategoryChip(
-                                            label = cs.label,
-                                            selected = themeSettings.clockStyle == cs,
-                                            palette = palette,
-                                            onClick = { onUpdateTheme { it.copy(clockStyle = cs) } }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.APP_DRAWER -> {
-                        item {
-                            SettingsCard(title = "3. App Drawer / App Library", palette = palette) {
-                                ToggleRow(
-                                    label = "Show Recent & Frequent Apps Row",
-                                    checked = performancePreferences.showDrawerRecentRow,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdatePerformance { it.copy(showDrawerRecentRow = v) } }
-                                )
-                                ToggleRow(
-                                    label = "Show Category Filter Tabs",
-                                    checked = performancePreferences.showDrawerCategories,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdatePerformance { it.copy(showDrawerCategories = v) } }
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Discovered Launchable Apps: ${installedApps.size}",
-                                    style = AstraTypography.Caption,
-                                    color = palette.primaryAccent
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                ActionChipButton("Rescan Installed Apps Now", palette, onRescanPackages)
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.ICONS -> {
-                        item {
-                            SettingsCard(title = "4. Real App Icons & Treatment", palette = palette) {
-                                Text(
-                                    text = "Astra loads every app's real LauncherActivityInfo / AdaptiveIconDrawable icon and caches it in memory.",
-                                    style = AstraTypography.Caption,
-                                    color = palette.secondaryText
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    items(AstraIconStyle.entries, key = { it.id }) { style ->
-                                        AstraCategoryChip(
-                                            label = style.label,
-                                            selected = themeSettings.iconStyle == style,
-                                            palette = palette,
-                                            onClick = { onUpdateTheme { it.copy(iconStyle = style) } }
-                                        )
-                                    }
-                                }
-                                ToggleRow(
-                                    label = "Show Icon Labels on Workspace & Drawer",
-                                    checked = themeSettings.showIconLabels,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateTheme { it.copy(showIconLabels = v) } }
-                                )
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.WIDGETS -> {
-                        item {
-                            SettingsCard(title = "5. Android AppWidgetHost Integration", palette = palette) {
-                                Text(
-                                    text = "Astra hosts real Android widgets via AppWidgetHost (ID 2026) and AppWidgetManager.",
-                                    style = AstraTypography.BodyM,
-                                    color = palette.secondaryText
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                ActionChipButton("Open Android Widget Picker", palette, onOpenWidgetPicker)
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.DOCK -> {
-                        item {
-                            SettingsCard(title = "6. Persistent Home Dock", palette = palette) {
-                                Text("Dock Slot Capacity", style = AstraTypography.Caption, color = palette.secondaryText)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    listOf(4, 5, 6).forEach { count ->
-                                        AstraCategoryChip(
-                                            label = "$count Slots",
-                                            selected = homeLayout.dockSlotCount == count,
-                                            palette = palette,
-                                            onClick = { onUpdateHomeLayout { it.copy(dockSlotCount = count) } }
-                                        )
-                                    }
-                                }
-                                ToggleRow(
-                                    label = "Smoked Glass Dock Surface",
-                                    checked = themeSettings.dockStyleGlass,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateTheme { it.copy(dockStyleGlass = v) } }
-                                )
-                                ToggleRow(
-                                    label = "Show Labels in Dock",
-                                    checked = themeSettings.showDockLabels,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateTheme { it.copy(showDockLabels = v) } }
-                                )
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.SEARCH -> {
-                        item {
-                            SettingsCard(title = "7. Universal Keyboard-First Search", palette = palette) {
-                                ToggleRow(
-                                    label = "Auto-Focus Keyboard on Search Open",
-                                    checked = searchPreferences.autoFocusKeyboard,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateSearch { it.copy(autoFocusKeyboard = v) } }
-                                )
-                                ToggleRow(
-                                    label = "Search Installed Applications",
-                                    checked = searchPreferences.searchApps,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateSearch { it.copy(searchApps = v) } }
-                                )
-                                ToggleRow(
-                                    label = "Search App Shortcuts (LauncherApps)",
-                                    checked = searchPreferences.searchShortcuts,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateSearch { it.copy(searchShortcuts = v) } }
-                                )
-                                ToggleRow(
-                                    label = "Search Android System Settings Deep-Links",
-                                    checked = searchPreferences.searchSettings,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateSearch { it.copy(searchSettings = v) } }
-                                )
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.GESTURES -> {
-                        item {
-                            SettingsCard(title = "8. Workspace Gestures & Haptics", palette = palette) {
-                                Text("Swipe Down on Workspace Action", style = AstraTypography.Caption, color = palette.secondaryText)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    SwipeDownAction.entries.forEach { action ->
-                                        AstraCategoryChip(
-                                            label = action.label,
-                                            selected = gesturePreferences.swipeDownAction == action,
-                                            palette = palette,
-                                            onClick = { onUpdateGestures { it.copy(swipeDownAction = action) } }
-                                        )
-                                    }
-                                }
-                                ToggleRow(
-                                    label = "Tactile Haptic Feedback",
-                                    checked = gesturePreferences.hapticsEnabled,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateGestures { it.copy(hapticsEnabled = v) } }
-                                )
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.WALLPAPER -> {
-                        item {
-                            SettingsCard(title = "9. Wallpaper System", palette = palette) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    WallpaperSource.entries.forEach { src ->
-                                        AstraCategoryChip(
-                                            label = src.label,
-                                            selected = themeSettings.wallpaperSource == src,
-                                            palette = palette,
-                                            onClick = { onUpdateTheme { it.copy(wallpaperSource = src) } }
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     items(AstraWallpaperId.entries, key = { it.id }) { wp ->
                                         AstraCategoryChip(
@@ -489,26 +351,198 @@ fun AstraSettingsOverlay(
                                         )
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text("Icon Treatment (Real Application Icons)", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(AstraIconStyle.entries, key = { it.id }) { style ->
+                                        AstraCategoryChip(
+                                            label = style.label,
+                                            selected = themeSettings.iconStyle == style,
+                                            palette = palette,
+                                            onClick = { onUpdateTheme { it.copy(iconStyle = style) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Icon Size: ${(themeSettings.iconScale * 100).toInt()}%",
+                                    style = AstraTypography.Caption,
+                                    color = palette.primaryText
+                                )
+                                Slider(
+                                    value = themeSettings.iconScale,
+                                    onValueChange = { s -> onUpdateTheme { it.copy(iconScale = s) } },
+                                    valueRange = 0.85f..1.20f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = palette.primaryAccent,
+                                        activeTrackColor = palette.primaryAccent
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Clock Style", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(AstraClockStyle.entries, key = { it.id }) { cs ->
+                                        AstraCategoryChip(
+                                            label = cs.label,
+                                            selected = themeSettings.clockStyle == cs,
+                                            palette = palette,
+                                            onClick = { onUpdateTheme { it.copy(clockStyle = cs) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ToggleRow(
+                                    label = "High-Contrast Accessibility Mode",
+                                    checked = themeSettings.highContrastMode,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateTheme { it.copy(highContrastMode = v) } }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ActionChipButton("Open Live Wallpaper & Style Studio", palette, onOpenPersonalizationStudio)
+                            }
+                        }
+                    }
+
+                    AstraSettingsSection.SEARCH -> {
+                        item {
+                            SettingsCard(title = "Universal System Search", palette = palette) {
+                                ToggleRow(
+                                    label = "Open Keyboard Immediately on Search",
+                                    checked = searchPreferences.autoFocusKeyboard,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateSearch { it.copy(autoFocusKeyboard = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Search Installed Applications",
+                                    checked = searchPreferences.searchApps,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateSearch { it.copy(searchApps = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Search Application Shortcuts",
+                                    checked = searchPreferences.searchShortcuts,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateSearch { it.copy(searchShortcuts = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Search System Settings & Astra Customization",
+                                    checked = searchPreferences.searchSettings,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateSearch { it.copy(searchSettings = v) } }
+                                )
+                            }
+                        }
+                    }
+
+                    AstraSettingsSection.GESTURES -> {
+                        item {
+                            SettingsCard(title = "Home Gestures & Navigation", palette = palette) {
+                                Text("Swipe Down on Home Screen", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    SwipeDownAction.entries.forEach { action ->
+                                        AstraCategoryChip(
+                                            label = action.label,
+                                            selected = gesturePreferences.swipeDownAction == action,
+                                            palette = palette,
+                                            onClick = { onUpdateGestures { it.copy(swipeDownAction = action) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text("Double Tap Empty Home Space", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    DoubleTapAction.entries.forEach { action ->
+                                        AstraCategoryChip(
+                                            label = action.label,
+                                            selected = gesturePreferences.doubleTapAction == action,
+                                            palette = palette,
+                                            onClick = { onUpdateGestures { it.copy(doubleTapAction = action) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ToggleRow(
+                                    label = "Tactile Haptic Feedback",
+                                    checked = gesturePreferences.hapticsEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateGestures { it.copy(hapticsEnabled = v) } }
+                                )
+                            }
+                        }
+                    }
+
+                    AstraSettingsSection.APPS -> {
+                        item {
+                            SettingsCard(title = "App Discovery, Categories & Hidden Apps", palette = palette) {
+                                ToggleRow(
+                                    label = "Default to Modern Discovery Surface (Categories, Favorites, Recent)",
+                                    checked = performancePreferences.showDrawerCategories,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdatePerformance { it.copy(showDrawerCategories = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Show Recently Used Strip",
+                                    checked = performancePreferences.showDrawerRecentRow,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdatePerformance { it.copy(showDrawerRecentRow = v) } }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Default All-Apps Sort Order", style = AstraTypography.Caption, color = palette.secondaryText)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    AppSortOrder.entries.forEach { order ->
+                                        AstraCategoryChip(
+                                            label = order.label,
+                                            selected = performancePreferences.appSortOrder == order,
+                                            palette = palette,
+                                            onClick = { onUpdatePerformance { it.copy(appSortOrder = order) } }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Discovered Installed Apps: ${installedApps.size} · Hidden Apps: ${homeLayout.hiddenComponents.size}",
+                                    style = AstraTypography.Caption,
+                                    color = palette.primaryAccent
+                                )
+                                if (homeLayout.hiddenComponents.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    ActionChipButton("Unhide All (${homeLayout.hiddenComponents.size}) Apps", palette) {
+                                        onUpdateHomeLayout { it.copy(hiddenComponents = emptySet()) }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ActionChipButton("Rescan Installed Applications", palette, onRescanPackages)
                             }
                         }
                     }
 
                     AstraSettingsSection.NOTIFICATIONS -> {
                         item {
-                            SettingsCard(title = "10. Notification Badges & Listener", palette = palette) {
+                            SettingsCard(title = "Notification Integration & Badges", palette = palette) {
                                 Text(
                                     text = if (capabilities.hasNotificationAccess)
-                                        "NotificationListenerService: Granted"
+                                        "Notification Access: Active ✓"
                                     else
-                                        "NotificationListenerService: Not granted (badges disabled until granted)",
+                                        "Notification Access: Not enabled (tap below to grant in Android Settings)",
                                     style = AstraTypography.BodyM,
                                     color = if (capabilities.hasNotificationAccess) palette.successTone else palette.warningTone
                                 )
                                 ToggleRow(
-                                    label = "Show Notification Count Badges on App Icons",
+                                    label = "Show Notification Badges on App Icons",
                                     checked = notificationPreferences.showAppBadgeDots,
                                     palette = palette,
                                     onCheckedChange = { v -> onUpdateNotifications { it.copy(showAppBadgeDots = v) } }
+                                )
+                                ToggleRow(
+                                    label = "Show Active Notification Pill on Home Header",
+                                    checked = notificationPreferences.showHomeNotificationPill,
+                                    palette = palette,
+                                    onCheckedChange = { v -> onUpdateNotifications { it.copy(showHomeNotificationPill = v) } }
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 ActionChipButton("Configure Android Notification Access ↗", palette, onOpenNotificationAccessSettings)
@@ -516,57 +550,46 @@ fun AstraSettingsOverlay(
                         }
                     }
 
-                    AstraSettingsSection.PRIVACY -> {
+                    AstraSettingsSection.WIDGETS -> {
                         item {
-                            SettingsCard(title = "11. Privacy & Hidden Applications", palette = palette) {
+                            val widgetCount = homeLayout.items.count { it.appWidgetId >= 0 }
+                            SettingsCard(title = "Android Widget Management", palette = palette) {
                                 Text(
-                                    text = "Hidden Apps (${homeLayout.hiddenComponents.size}) are excluded from the main App Drawer and Search results.",
+                                    text = "Active Bound Widgets on Workspace: $widgetCount",
                                     style = AstraTypography.BodyM,
+                                    color = palette.primaryText
+                                )
+                                Text(
+                                    text = "Long-press Home and tap Widgets to place, move, or resize real Android AppWidgetHost widgets across your pages.",
+                                    style = AstraTypography.Caption,
                                     color = palette.secondaryText
                                 )
-                                if (homeLayout.hiddenComponents.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    ActionChipButton("Unhide All Apps", palette) {
-                                        onUpdateHomeLayout { it.copy(hiddenComponents = emptySet()) }
-                                    }
-                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                ActionChipButton("Open Android Widget Picker", palette, onOpenWidgetPicker)
                             }
                         }
                     }
 
                     AstraSettingsSection.PERFORMANCE -> {
                         item {
-                            SettingsCard(title = "12. Performance & Low-Memory Budget", palette = palette) {
+                            SettingsCard(title = "Performance & Low-End Hardware Budget", palette = palette) {
                                 ToggleRow(
-                                    label = "Enable Spring Motion & Transitions",
+                                    label = "Smooth Spatial Animations",
                                     checked = performancePreferences.animationsEnabled,
                                     palette = palette,
                                     onCheckedChange = { v -> onUpdatePerformance { it.copy(animationsEnabled = v) } }
                                 )
                                 ToggleRow(
-                                    label = "Enable Translucent Glass Surfaces",
+                                    label = "Translucent Smoked Glass Surfaces",
                                     checked = performancePreferences.blurEnabled,
                                     palette = palette,
                                     onCheckedChange = { v -> onUpdatePerformance { it.copy(blurEnabled = v) } }
                                 )
                                 ToggleRow(
-                                    label = "Force Low-RAM / Solid Surface Mode",
+                                    label = "Battery-Conscious / Low-RAM Mode (Solid Graphite Surfaces)",
                                     checked = performancePreferences.lowEndDeviceModeOverride,
                                     palette = palette,
                                     onCheckedChange = { v -> onUpdatePerformance { it.copy(lowEndDeviceModeOverride = v) } }
-                                )
-                            }
-                        }
-                    }
-
-                    AstraSettingsSection.ACCESSIBILITY -> {
-                        item {
-                            SettingsCard(title = "13. Accessibility & Legibility", palette = palette) {
-                                ToggleRow(
-                                    label = "High-Contrast Text & Borders (WCAG AAA)",
-                                    checked = themeSettings.highContrastMode,
-                                    palette = palette,
-                                    onCheckedChange = { v -> onUpdateTheme { it.copy(highContrastMode = v) } }
                                 )
                                 ToggleRow(
                                     label = "Reduced Motion Mode",
@@ -580,19 +603,29 @@ fun AstraSettingsOverlay(
 
                     AstraSettingsSection.ABOUT_ASTRA -> {
                         item {
-                            SettingsCard(title = "14. About Astra Launcher", palette = palette) {
+                            SettingsCard(title = "About Astra, Privacy & Diagnostics", palette = palette) {
                                 Text(
-                                    text = "Astra Launcher v2.0.0 (com.astra.launcher)",
+                                    text = "Astra Launcher v2.1.0 (com.astra.launcher)",
                                     style = AstraTypography.SectionHeader,
                                     color = palette.primaryText
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Real Android Home Launcher · Persistent 2D Workspace · LauncherApps & AppWidgetHost Engine · Zero Telemetry",
-                                    style = AstraTypography.BodyM,
+                                    text = "• Zero Advertising: Astra contains zero ad SDKs, zero sponsored results, and zero promotional cards.\n" +
+                                        "• Local-First Privacy: All app indexing, usage ranking, favorites, and workspace state stay 100% on your device.\n" +
+                                        "• Default Home Role: ${if (capabilities.isCurrentlyDefaultHome) "Active" else "Inactive (${capabilities.currentDefaultHomePackage.ifBlank { "System Default" }})"}\n" +
+                                        "• TECNO / HiOS Environment Detected: ${if (capabilities.isHiOsDetectedOnDevice) "Yes (Ensure Astra is selected in Settings -> Apps -> Default Apps -> Home App)" else "Standard Android"}",
+                                    style = AstraTypography.Caption,
                                     color = palette.secondaryText
                                 )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                ActionChipButton("Reset Workspace & Settings to Defaults", palette, onResetDefaults)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ActionChipButton("Re-run First-Run Setup", palette) {
+                                        onClose()
+                                        onReopenFirstRunSetup()
+                                    }
+                                    ActionChipButton("Reset Workspace", palette, onResetDefaults)
+                                }
                             }
                         }
                     }

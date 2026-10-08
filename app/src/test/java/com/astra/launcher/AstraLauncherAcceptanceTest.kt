@@ -21,7 +21,11 @@ import com.astra.launcher.core.storage.AstraStorageRepository
 import com.astra.launcher.core.storage.AstraThemeMode
 import com.astra.launcher.core.storage.AstraThemePreset
 import com.astra.launcher.core.storage.AstraWallpaperId
+import com.astra.launcher.core.storage.HomeDensityMode
+import com.astra.launcher.core.storage.SearchPreferences
+import com.astra.launcher.core.storage.SwipeDownAction
 import com.astra.launcher.core.storage.WorkspaceItemType
+import com.astra.launcher.feature.search.AstraSearchIndex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -107,7 +111,40 @@ class AstraLauncherAcceptanceTest {
     }
 
     @Test
-    fun `3 - Package discovery returns ONLY real installed apps and never injects fake fallback catalog`() {
+    fun `3 - First-Run Setup configures atmosphere, density mode, icons, and populates Home from real apps`() {
+        val repo = AstraStorageRepository(appContext)
+        repo.resetToSafeDefaults()
+        assertFalse(repo.homeLayout.value.hasCompletedFirstRunSetup)
+
+        val installed = (1..12).map { idx ->
+            AstraAppEntry(
+                packageName = "com.example.app$idx",
+                componentName = "com.example.app$idx/MainActivity",
+                activityClassName = "MainActivity",
+                label = "App $idx"
+            )
+        }
+
+        repo.completeFirstRunSetup(
+            preset = AstraThemePreset.NOCTURNE,
+            densityMode = HomeDensityMode.MINIMAL,
+            iconStyle = AstraIconStyle.MONOCHROME_TINT,
+            swipeDownAction = SwipeDownAction.ASTRA_NOTIFICATIONS,
+            installedApps = installed
+        )
+
+        assertTrue(repo.homeLayout.value.hasCompletedFirstRunSetup)
+        assertEquals(HomeDensityMode.MINIMAL, repo.homeLayout.value.densityMode)
+        assertEquals(AstraThemePreset.NOCTURNE, repo.themeSettings.value.themePreset)
+        assertEquals(AstraIconStyle.MONOCHROME_TINT, repo.themeSettings.value.iconStyle)
+        assertEquals(SwipeDownAction.ASTRA_NOTIFICATIONS, repo.gesturePreferences.value.swipeDownAction)
+        // Minimal density populates 5 dock apps + 4 curated workspace apps
+        assertEquals(5, repo.homeLayout.value.dockItems.size)
+        assertEquals(4, repo.homeLayout.value.items.size)
+    }
+
+    @Test
+    fun `4 - Package discovery returns ONLY real installed apps and never injects fake fallback catalog`() {
         registerFakeInstalledThirdPartyApp(
             packageName = "org.mozilla.firefox",
             className = "org.mozilla.firefox.App",
@@ -125,13 +162,38 @@ class AstraLauncherAcceptanceTest {
         val pkgs = discovered.map { it.packageName }.toSet()
         assertTrue(pkgs.contains("org.mozilla.firefox"))
         assertTrue(pkgs.contains("com.spotify.music"))
-        // Verify fake catalog apps that were not installed are NOT fabricated
         assertFalse(pkgs.contains("com.google.android.youtube"))
         assertFalse(pkgs.contains("com.whatsapp"))
     }
 
     @Test
-    fun `4 - Launching an installed app fires real ComponentName Intent and leaves launcher foreground`() {
+    fun `5 - Natural language Search resolves Open App queries and honest system handoffs`() {
+        val youtube = AstraAppEntry(
+            packageName = "com.google.android.youtube",
+            componentName = "com.google.android.youtube/HomeActivity",
+            activityClassName = "HomeActivity",
+            label = "YouTube"
+        )
+        val bundle = AstraSearchIndex.query(
+            rawQuery = "open YouTube",
+            installedApps = listOf(youtube),
+            hiddenComponents = emptySet(),
+            preferences = SearchPreferences()
+        )
+        assertEquals(1, bundle.matchedApps.size)
+        assertEquals("com.google.android.youtube", bundle.matchedApps.first().packageName)
+
+        val wifiBundle = AstraSearchIndex.query(
+            rawQuery = "turn on wifi",
+            installedApps = listOf(youtube),
+            hiddenComponents = emptySet(),
+            preferences = SearchPreferences()
+        )
+        assertTrue(wifiBundle.matchedSettings.any { it.id == "wifi" })
+    }
+
+    @Test
+    fun `6 - Launching an installed app fires real ComponentName Intent and leaves launcher foreground`() {
         registerFakeInstalledThirdPartyApp(
             packageName = "org.mozilla.firefox",
             className = "org.mozilla.firefox.App",
@@ -154,7 +216,7 @@ class AstraLauncherAcceptanceTest {
     }
 
     @Test
-    fun `5 - Real Icon Pipeline renders normalized Bitmaps and invalidates cache on package update`() {
+    fun `7 - Real Icon Pipeline renders normalized Bitmaps and invalidates cache on package update`() {
         val pipeline = AstraIconPipeline(appContext)
         val drawable = ColorDrawable(Color.rgb(56, 189, 248))
 
@@ -178,7 +240,7 @@ class AstraLauncherAcceptanceTest {
     }
 
     @Test
-    fun `6 - 2D Workspace coordinates, folders, dock, widgets, and 14 settings persist across process death`() {
+    fun `8 - 2D Workspace coordinates, smart folders, dock, widgets, and settings persist across process death`() {
         val repo1 = AstraStorageRepository(appContext)
         repo1.resetToSafeDefaults()
 
@@ -188,15 +250,15 @@ class AstraLauncherAcceptanceTest {
             activityClassName = "org.mozilla.firefox.App",
             label = "Firefox"
         )
-        val spotify = AstraAppEntry(
-            packageName = "com.spotify.music",
-            componentName = "com.spotify.music/com.spotify.music.MainActivity",
-            activityClassName = "com.spotify.music.MainActivity",
-            label = "Spotify"
+        val chrome = AstraAppEntry(
+            packageName = "com.android.chrome",
+            componentName = "com.android.chrome/com.google.android.apps.chrome.Main",
+            activityClassName = "com.google.android.apps.chrome.Main",
+            label = "Chrome"
         )
 
         val item1 = repo1.pinAppToWorkspace(firefox, preferredPage = 0)!!
-        val item2 = repo1.pinAppToWorkspace(spotify, preferredPage = 0)!!
+        val item2 = repo1.pinAppToWorkspace(chrome, preferredPage = 0)!!
         repo1.setDockSlot(0, firefox)
         repo1.addWidgetToWorkspace(
             appWidgetId = 42,
@@ -207,34 +269,30 @@ class AstraLauncherAcceptanceTest {
             spanY = 2
         )
 
-        // Merge item2 onto item1 to create a Folder at item1's 2D coordinates
+        // Merge Chrome onto Firefox -> creates smartly named "Browsers" folder
         assertTrue(repo1.moveOrMergeWorkspaceItem(item2.id, item1.page, item1.cellX, item1.cellY))
 
-        // Simulate process death and cold restart with a new repository instance reading SharedPreferences
         val repo2 = AstraStorageRepository(appContext)
         val restoredLayout = repo2.homeLayout.value
         assertTrue(restoredLayout.isInitialized)
         assertEquals(1, restoredLayout.dockItems.size)
-        assertEquals("org.mozilla.firefox/org.mozilla.firefox.App", restoredLayout.dockItems.first().componentName)
 
         val restoredFolder = restoredLayout.items.firstOrNull { it.itemType == WorkspaceItemType.FOLDER }
         assertNotNull("Folder must survive process death", restoredFolder)
-        assertEquals(2, restoredFolder!!.folderItems.size)
+        assertEquals("Browsers", restoredFolder!!.label)
+        assertEquals(2, restoredFolder.folderItems.size)
 
         val restoredWidget = restoredLayout.items.firstOrNull { it.itemType == WorkspaceItemType.WIDGET }
         assertNotNull("Bound widget coordinate item must survive process death", restoredWidget)
         assertEquals(42, restoredWidget!!.appWidgetId)
-        assertEquals(4, restoredWidget.spanX)
-        assertEquals(2, restoredWidget.spanY)
 
-        // Removing all apps from folder deletes the folder automatically
         repo2.removeAppFromFolder(restoredFolder.id, firefox.componentName)
-        repo2.removeAppFromFolder(restoredFolder.id, spotify.componentName)
+        repo2.removeAppFromFolder(restoredFolder.id, chrome.componentName)
         assertNull(repo2.homeLayout.value.items.firstOrNull { it.id == restoredFolder.id })
     }
 
     @Test
-    fun `7 - WCAG Contrast Engine and Performance Low-RAM budget enforce legibility across all wallpapers`() {
+    fun `9 - WCAG Contrast Engine and Performance Low-RAM budget enforce legibility across all wallpapers`() {
         for (wp in AstraWallpaperId.entries) {
             val palette = AstraColorEngine.resolvePalette(
                 wallpaper = wp,

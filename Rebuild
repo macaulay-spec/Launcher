@@ -1,0 +1,1705 @@
+ASTRA LAUNCHER — COMPLETE PRODUCT, UX AND SYSTEM EXPERIENCE REBUILD
+
+The current build has made progress on the Android launcher foundation, but the product experience is still unacceptable.
+
+Do NOT treat the current implementation as the finished Astra experience.
+
+The current problem is not simply whether Astra technically launches applications.
+
+The problem is that Astra currently feels like a raw prototype with an outdated launcher UX, weak visual design, primitive app discovery, excessive command-oriented interactions, poor Home experience, insufficient setup, and inadequate customization.
+
+We are rebuilding the actual Astra product experience on top of the now-working real Android launcher foundation.
+
+The goal is:
+
+ASTRA SHOULD FEEL LIKE A PREMIUM PHONE ENVIRONMENT
+
+Astra should feel like a complete, intentional Home environment.
+
+It should not feel like:
+
+- a normal Android application
+- a command-line launcher
+- an A-Z application list
+- a developer prototype
+- a settings demo
+- an AI chatbot pretending to be a launcher
+- a collection of disconnected screens
+
+The experience should combine the strongest principles of:
+
+- Apple iOS
+- Samsung One UI
+- Google Pixel
+- Nothing OS
+
+WITHOUT copying any of them.
+
+Astra must have its own identity.
+
+The design target is:
+
+PREMIUM
+CALM
+CINEMATIC
+SPATIAL
+INTELLIGENT
+PRACTICAL
+MODERN
+FAST
+PERSONAL
+SLIGHTLY FUTURISTIC
+
+No cheap sci-fi effects.
+
+No excessive glass.
+
+No neon overload.
+
+No generic AI dashboard aesthetic.
+
+No giant collection of floating cards.
+
+No “futuristic” design that looks like a Dribbble concept nobody could actually use.
+
+---
+
+1. ASTRA MUST BE THE REAL HOME ENVIRONMENT
+
+Astra is a real Android launcher.
+
+When the user selects Astra as the default Home application:
+
+Android
+↓
+Astra
+↓
+Astra Home
+
+Astra should not behave like an application manually opened on top of another launcher.
+
+Astra should own the Home experience.
+
+Pressing Home should return directly to Astra.
+
+Opening another application should launch the real application.
+
+Returning Home should return directly to Astra.
+
+Do not build a fake launcher layer on top of another launcher.
+
+Do not use transparent Activity tricks.
+
+Do not simulate Home.
+
+Do not fake the launcher state.
+
+Use Android's actual Home role and launcher APIs.
+
+---
+
+2. FIRST-RUN EXPERIENCE MUST BE BEAUTIFUL
+
+The first experience after installation is extremely important.
+
+Do not immediately dump the user into an ugly default workspace.
+
+Do not force the user to manually configure everything before Astra looks good.
+
+The first-run flow should feel like setting up a new premium phone.
+
+Example:
+
+ASTRA
+
+“Your phone, redesigned.”
+
+Then a short visual setup flow.
+
+Step 1:
+Choose your Astra atmosphere.
+
+Show beautiful visual previews.
+
+Examples:
+
+ORBIT
+NOCTURNE
+HORIZON
+
+Step 2:
+Choose Home layout.
+
+Examples:
+
+Minimal
+Balanced
+Dense
+
+Step 3:
+Choose icon treatment.
+
+Examples:
+
+Original
+Astra Adaptive
+Monochrome
+
+Step 4:
+Choose navigation/gesture behavior where Android permits it.
+
+Step 5:
+Choose whether to enable optional integrations.
+
+Examples:
+
+Notifications
+Widgets
+Shortcuts
+Accessibility features if genuinely required
+
+Step 6:
+Set Astra as the default Home application.
+
+Use the actual Android role/default-home flow.
+
+Then:
+
+“Welcome to Astra.”
+
+The user should arrive at a polished, populated Home.
+
+Do not make the user spend 30 minutes inside settings before the launcher becomes usable.
+
+---
+
+3. HOME SCREEN MUST BE THE STAR
+
+The Home screen is not an app list.
+
+It is the primary Astra environment.
+
+The Home should immediately feel premium.
+
+Use:
+
+- large adaptive clock
+- date
+- contextual information
+- curated app shortcuts
+- intelligent spacing
+- wallpaper
+- subtle widgets
+- dock
+- page indicator
+- elegant transitions
+
+The Home should have visual breathing room.
+
+Do not fill every available pixel with icons.
+
+Do not make it look like a spreadsheet.
+
+Do not make the Home screen look like an old Android launcher.
+
+---
+
+4. MODERN APPLICATION DISCOVERY
+
+Do NOT make a primitive A-Z application grid the primary application experience.
+
+Alphabetical sorting may exist as an optional fallback.
+
+It must NOT define Astra.
+
+Modern app discovery should prioritize:
+
+- favorites
+- recently used
+- frequently used
+- contextual suggestions
+- categories
+- intelligent search
+- fast access
+- recent applications
+- user-created groups
+- optional alphabetical index
+
+The application drawer should feel like a modern discovery surface.
+
+Example:
+
+SEARCH
+
+Recently Used
+
+Favorites
+
+Communication
+
+Entertainment
+
+Productivity
+
+Utilities
+
+Games
+
+Other
+
+The categories must be based on real installed applications.
+
+Do not invent applications.
+
+Do not force users into categories if they prefer search.
+
+---
+
+5. SEARCH MUST FEEL LIKE A SYSTEM SURFACE
+
+Search should be one of Astra's strongest features.
+
+Opening search should produce a beautiful full-width system surface.
+
+It should allow:
+
+- application search
+- contact search where permission/API allows
+- settings search where supported
+- launcher settings search
+- widget discovery
+- shortcuts
+- recent applications
+- contextual actions
+
+Search results should be ranked intelligently.
+
+Do not display raw debug-style commands.
+
+Do not make the interface feel like a terminal.
+
+Natural language actions may exist as an advanced feature, but they must be honest.
+
+For example:
+
+“Open YouTube”
+
+can launch YouTube.
+
+“Turn on Wi-Fi”
+
+must NOT claim success unless Astra actually performed the permitted Android operation.
+
+If Android requires the user to open system settings, clearly hand off to Android.
+
+Never fake system control.
+
+---
+
+6. COMMANDS ARE NOT THE PRIMARY UX
+
+Remove the feeling that Astra is primarily a command launcher.
+
+Commands can be a secondary capability.
+
+The main interface must be visual, touch-first, contextual, and intuitive.
+
+A user should never have to understand Astra's internal commands to use Astra.
+
+The launcher must work beautifully without typing a single command.
+
+---
+
+7. HOME SCREEN CUSTOMIZATION
+
+Create a dedicated Astra Home customization environment.
+
+Settings must allow users to configure:
+
+- Home layout
+- number of Home pages
+- grid size
+- icon size
+- icon labels
+- icon spacing
+- dock
+- dock size
+- dock visibility
+- page indicator
+- clock
+- date
+- widgets
+- wallpaper
+- blur/transparency level
+- animation level
+- gesture behavior
+- search behavior
+- app drawer behavior
+- folder appearance
+- notification indicators
+- theme
+- accent
+- dark/light behavior where appropriate
+
+Do not make these settings look like raw Android preferences.
+
+Create an actual Astra Settings experience.
+
+---
+
+8. WALLPAPER EXPERIENCE
+
+Wallpaper must be integrated into Astra's design system.
+
+When the user chooses wallpaper, show a beautiful visual preview.
+
+Provide Astra's built-in wallpaper families.
+
+ORBIT
+
+NOCTURNE FLOW
+
+HORIZON
+
+The wallpaper preview should show:
+
+- Home
+- icons
+- clock
+- dock
+- widgets
+
+The user should understand how the complete environment will look before applying it.
+
+Wallpaper should influence controlled UI contrast/accent behavior.
+
+Do not randomly change every interface color.
+
+---
+
+9. ICON SYSTEM
+
+Use actual Android application icons.
+
+Do not replace installed application icons with arbitrary glyphs.
+
+Astra may provide visual treatments:
+
+- original
+- adaptive
+- monochrome
+- Astra-styled
+
+But application identity must remain recognizable.
+
+Icons should feel cohesive without destroying the original brand.
+
+Support:
+
+- adaptive icons
+- legacy icons
+- monochrome icons where available
+- launcher shortcuts
+- badges where supported
+
+---
+
+10. DOCK
+
+The dock must feel like a premium permanent navigation area.
+
+It should support:
+
+- configurable number of apps
+- drag and drop
+- folders
+- optional search
+- optional gesture interaction
+- visual customization
+
+The dock should not simply be a row of tiny icons glued to the bottom.
+
+Use One UI-style ergonomic thinking without copying Samsung.
+
+---
+
+11. FOLDERS
+
+Folders should be modern and spatial.
+
+Opening a folder should feel like expanding a surface from the Home environment.
+
+Support:
+
+- folder name
+- automatic naming where useful
+- custom naming
+- icon preview
+- drag/drop
+- application removal
+- folder placement
+- persistent state
+
+Do not make folders look like old Android popups.
+
+---
+
+12. WIDGET EXPERIENCE
+
+Widgets are part of the Home environment.
+
+Use real Android AppWidget APIs.
+
+Provide a polished widget placement/edit experience.
+
+Users should be able to:
+
+- add widgets
+- move widgets
+- resize widgets
+- remove widgets
+- place widgets across pages
+
+Astra must handle widget lifecycle correctly.
+
+Do not simulate widgets with screenshots or fake cards.
+
+---
+
+13. ASTRA SETTINGS
+
+Create a dedicated Astra Settings application surface.
+
+Main categories:
+
+Home
+
+- layout
+- grid
+- icons
+- labels
+- dock
+- pages
+
+Appearance
+
+- wallpaper
+- theme
+- accent
+- icon treatment
+- transparency
+- blur
+- typography
+
+Search
+
+- search behavior
+- sources
+- suggestions
+- shortcuts
+
+Gestures
+
+- swipe up
+- swipe down
+- double tap
+- edge gestures where supported
+- Home gestures
+
+Apps
+
+- app drawer
+- categories
+- hidden apps
+- default apps
+- app behavior
+
+Notifications
+
+- notification access
+- notification indicators
+- notification-related launcher behavior
+
+Widgets
+
+- widget management
+- widget placement behavior
+
+Performance
+
+- animation level
+- blur quality
+- background behavior
+- battery-conscious mode
+
+About Astra
+
+- version
+- licenses
+- diagnostics
+- privacy
+
+Settings should look like part of Astra.
+
+---
+
+14. NO ADS
+
+Astra must contain:
+
+ZERO advertising.
+
+Do not implement:
+
+- advertisements
+- ad SDKs
+- ad settings
+- advertising preferences
+- promotional cards
+- sponsored apps
+- sponsored search results
+
+The launcher must not contain an advertising architecture.
+
+---
+
+15. CONTROL CENTER
+
+Do not pretend Astra can replace protected Android/HiOS system components when it cannot.
+
+If a launcher-side Control Center is implemented, it must be clearly designed as an Astra surface.
+
+It should provide only controls Android actually permits.
+
+For unsupported protected operations, open the relevant Android system interface.
+
+Do not fake toggle states.
+
+If Wi-Fi cannot be changed directly, do not show “Wi-Fi enabled” merely because the user tapped a button.
+
+Truthful state is mandatory.
+
+---
+
+16. NOTIFICATIONS
+
+If notification access is enabled:
+
+Use real notification data.
+
+Do not create fake notification examples in production.
+
+The Astra notification surface should prioritize:
+
+- importance
+- application identity
+- time
+- grouping
+- readability
+- actions where supported
+
+Do not copy iOS Notification Center exactly.
+
+Do not copy Samsung's notification shade exactly.
+
+Create an Astra interpretation.
+
+---
+
+17. LOCK SCREEN AND AOD
+
+A normal third-party launcher does not have unrestricted control over Android's secure lock screen or OEM AOD.
+
+Do not pretend otherwise.
+
+If Astra provides companion experiences:
+
+- respect Android security
+- respect device restrictions
+- use supported APIs
+- provide honest fallbacks
+
+Do not claim Astra has replaced HiOS's protected lock screen when it has not.
+
+---
+
+18. MOTION
+
+Motion should communicate spatial relationships.
+
+Use animation for:
+
+- opening search
+- opening folders
+- entering app drawer
+- entering edit mode
+- moving widgets
+- launching applications
+- returning Home
+- changing Home pages
+
+Animations should be:
+
+- fast
+- smooth
+- purposeful
+- interruptible where appropriate
+
+Do not animate everything.
+
+Do not use excessive bounce.
+
+Do not use generic “AI” particle effects.
+
+---
+
+19. PREMIUM VISUAL LANGUAGE
+
+Use:
+
+- deep graphite
+- true black where appropriate
+- restrained translucent surfaces
+- subtle tonal contrast
+- premium typography
+- generous spacing
+- controlled highlights
+- cinematic wallpaper
+- carefully designed cards
+- coherent iconography
+
+Avoid:
+
+- purple AI aesthetics
+- rainbow gradients
+- neon borders
+- excessive glass
+- giant glowing text
+- clutter
+- generic Material demo styling
+
+Astra should feel expensive because the design is disciplined.
+
+---
+
+20. iOS + ONE UI + PIXEL + NOTHING INFLUENCE
+
+Study and combine principles rather than copying interfaces.
+
+From iOS:
+
+- spatial coherence
+- typography
+- polish
+- animation discipline
+- system consistency
+
+From One UI:
+
+- one-handed ergonomics
+- hierarchy
+- practical layouts
+- customization
+
+From Pixel:
+
+- contextual information
+- clean system hierarchy
+- intelligent simplicity
+
+From Nothing:
+
+- distinctive identity
+- restraint
+- visual consistency
+- recognizable design vocabulary
+
+Astra must synthesize these principles into an original system.
+
+Do not copy:
+
+- icons
+- layouts
+- exact animations
+- exact control center
+- exact widgets
+- exact typography
+- exact navigation
+
+---
+
+21. HOME SHOULD FEEL ALIVE WITHOUT BEING NOISY
+
+The Home screen may adapt to context.
+
+Examples:
+
+Morning:
+date + weather + useful apps
+
+Work:
+calendar/productivity emphasis
+
+Evening:
+media/social emphasis
+
+Frequently used applications can become easier to reach.
+
+However, Astra must never constantly rearrange the user's Home without permission.
+
+Predictive behavior must respect user control.
+
+---
+
+22. PERSONALIZATION
+
+Astra should remember the user's choices.
+
+Persist:
+
+- Home layout
+- icon positions
+- folders
+- dock
+- wallpaper
+- widgets
+- theme
+- grid
+- icon size
+- settings
+- search preferences
+- gesture preferences
+
+Workspace state must survive:
+
+- application restart
+- process recreation
+- device reboot
+
+Do not rely on in-memory state.
+
+---
+
+23. PERFORMANCE
+
+The launcher must remain lightweight.
+
+Avoid:
+
+- unnecessary network requests
+- expensive rendering
+- giant image assets
+- continuous background work
+- unnecessary services
+- excessive blur
+- unnecessary recomposition
+- memory-heavy caches
+
+Cache icons efficiently.
+
+Load content lazily.
+
+Release resources appropriately.
+
+Astra must remain responsive on low-end Android hardware.
+
+---
+
+24. ACCESSIBILITY
+
+Support:
+
+- readable text
+- adequate touch targets
+- screen readers where practical
+- high contrast
+- reduced motion where Android settings require it
+- keyboard navigation where applicable
+- scalable text
+
+Do not sacrifice accessibility for visual minimalism.
+
+---
+
+25. REAL ANDROID CAPABILITIES
+
+Use Android APIs for:
+
+- Home role
+- LauncherApps
+- PackageManager
+- application icons
+- application labels
+- shortcuts
+- AppWidgetManager
+- AppWidgetHost
+- package lifecycle
+- wallpaper
+- intents
+- notification access where enabled
+- supported system settings
+
+Do not create fake implementations when real APIs exist.
+
+---
+
+26. NO FAKE DATA
+
+Production Astra must contain no fake:
+
+- applications
+- notifications
+- weather
+- time
+- dates
+- system state
+- battery state
+- Wi-Fi state
+- Bluetooth state
+- settings results
+
+Use real device information.
+
+If real information is unavailable, show an honest unavailable state.
+
+---
+
+27. APP DRAWER REDESIGN
+
+The current primitive A-Z drawer must be replaced.
+
+The drawer should open as a polished Astra discovery environment.
+
+Suggested structure:
+
+Top:
+Search
+
+Then:
+
+Recently Used
+
+Favorites
+
+Suggested
+
+Categories
+
+All Apps
+
+The All Apps section may support:
+
+- alphabetical indexing
+- sorting
+- category filtering
+- usage sorting
+
+But alphabetical order must not be the only discovery method.
+
+The user should be able to reach an application quickly with minimal interaction.
+
+---
+
+28. HOME EDIT MODE
+
+Long-press empty Home space.
+
+Enter Astra Home Edit Mode.
+
+Provide:
+
+- Wallpapers
+- Widgets
+- Layout
+- Icons
+- Settings
+
+Show a visual preview.
+
+Allow:
+
+- moving items
+- adding widgets
+- changing wallpaper
+- managing pages
+
+Do not send users into five separate settings pages just to perform basic Home customization.
+
+---
+
+29. LONG-PRESS APPLICATION MENU
+
+Long-press an application.
+
+Show useful actions:
+
+- Open
+- App info
+- Remove from Home
+- Add to dock
+- Add to folder
+- Widget/shortcut options where supported
+- Uninstall where Android permits
+- Hide application if Astra supports hiding
+
+Use the actual Android package/component information.
+
+Do not fabricate actions that Android cannot perform.
+
+---
+
+30. SEARCH AND COMMAND INTEGRATION
+
+Commands may exist inside Search as an advanced interaction layer.
+
+Example:
+
+User types:
+
+“open Netflix”
+
+Astra launches the real application.
+
+User types:
+
+“settings”
+
+Astra opens Astra Settings.
+
+User types:
+
+“wallpaper”
+
+Astra opens wallpaper customization.
+
+User types:
+
+“Wi-Fi”
+
+Astra should show the appropriate system settings or supported state.
+
+Do not pretend to have privileged access.
+
+The command system should complement the visual launcher rather than replace it.
+
+---
+
+31. SYSTEM ACCESS
+
+Astra should request only permissions that are genuinely required.
+
+Do not request every permission during installation.
+
+For optional capabilities, explain why permission is needed.
+
+Examples:
+
+Notification access:
+“This lets Astra organize your notifications.”
+
+Accessibility:
+Only request if a specific feature genuinely requires it.
+
+Widgets:
+Use Android widget binding.
+
+Contacts:
+Only request if contact search/calling functionality is implemented.
+
+Every permission request must have a real purpose.
+
+---
+
+32. SETUP SHOULD FEEL LIKE A NEW PHONE
+
+After Astra becomes the default Home application, the experience should immediately communicate:
+
+“This is your new Home.”
+
+The user should see:
+
+- polished wallpaper
+- beautiful clock
+- sensible application placement
+- dock
+- search
+- useful widgets
+- clean hierarchy
+
+Do not show an empty grid with random icons.
+
+Do not show developer placeholders.
+
+Do not show raw commands.
+
+Do not make the first impression look unfinished.
+
+---
+
+33. VISUAL QUALITY BAR
+
+Use this mental comparison:
+
+Would this feel acceptable as a built-in launcher on a premium phone released in 2026?
+
+If the answer is no, redesign it.
+
+Do not optimize only for technical correctness.
+
+The launcher must have both:
+
+TECHNICAL QUALITY
++
+PRODUCT QUALITY
+
+A technically correct launcher with terrible UX is still a failed product.
+
+---
+
+34. REMOVE OUTDATED UX
+
+Identify and remove outdated launcher conventions.
+
+Examples:
+
+- primitive A-Z-first application drawer
+- tiny generic search box
+- ugly default grids
+- excessive icon density
+- raw settings lists
+- generic Android demo cards
+- developer-facing command labels
+- unnecessary screen switching
+- fake system panels
+- hardcoded demo information
+- arbitrary glyph icons
+- empty placeholder surfaces
+
+Modernize the entire interaction model.
+
+---
+
+35. KEEP THE REAL LAUNCHER FOUNDATION
+
+Do NOT destroy the work that made Astra a real launcher.
+
+Preserve and improve:
+
+- Home role
+- LauncherApps integration
+- real application discovery
+- real icons
+- application launching
+- workspace persistence
+- folders
+- dock
+- widgets
+- package observation
+- Android lifecycle
+- process recovery
+
+The new UX must sit on top of the real launcher architecture.
+
+---
+
+36. REBUILD THE UI, NOT JUST THE COLORS
+
+Do not simply change:
+
+- colors
+- font
+- corner radius
+- icon size
+
+The current experience requires structural UX redesign.
+
+Reconsider:
+
+- information hierarchy
+- Home composition
+- app discovery
+- navigation
+- settings architecture
+- customization
+- first-run setup
+- search
+- folders
+- widgets
+- gestures
+- system surfaces
+- motion
+
+This is a product redesign.
+
+---
+
+37. DESIGN EVERYTHING BEFORE IMPLEMENTING EVERYTHING
+
+Before rewriting the UI, create a coherent design system.
+
+Define:
+
+- typography scale
+- spacing scale
+- surface hierarchy
+- icon sizing
+- corner-radius system
+- shadows
+- blur rules
+- animation rules
+- transition rules
+- wallpaper relationships
+- interaction states
+- empty states
+- error states
+- loading states
+
+Then implement the UI consistently.
+
+Do not design each screen independently.
+
+---
+
+38. REQUIRED PRIMARY SURFACES
+
+The final Astra experience must include polished versions of:
+
+1. First Run
+2. Home
+3. App Discovery
+4. Search
+5. Folder
+6. Home Edit Mode
+7. Wallpaper Picker
+8. Widget Picker
+9. Astra Settings
+10. Appearance Settings
+11. Home Settings
+12. Icon Settings
+13. Gesture Settings
+14. Search Settings
+15. Notification Integration
+16. Optional Control Surface
+17. About and Diagnostics
+
+Every surface must feel like part of the same product.
+
+Do not allow individual screens to look like unrelated applications.
+
+The same typography, spacing, surface hierarchy, icon language, animation language, and visual atmosphere must carry throughout Astra.
+
+---
+
+39. FINAL PRODUCT PRINCIPLE
+
+Astra is not supposed to make the user think:
+
+“What command do I type?”
+
+It should make the user think:
+
+“This is my phone.”
+
+The launcher should disappear into the experience.
+
+It should feel natural enough that users stop thinking about the launcher itself.
+
+The interface should be:
+
+- beautiful when idle
+- fast when used
+- powerful when customized
+- quiet when unnecessary
+- intelligent when useful
+
+Astra should not constantly demand attention.
+
+It should provide the right information at the right time without becoming noisy or cluttered.
+
+---
+
+40. IMPLEMENTATION REQUIREMENT
+
+Inspect the current working Astra branch and compare the existing implementation against this specification.
+
+Do not assume the current UI is acceptable simply because the launcher architecture works.
+
+Identify every major mismatch.
+
+Categorize each mismatch as:
+
+- architecture
+- UX
+- visual design
+- interaction
+- Android integration
+- performance
+- persistence
+- permissions
+- accessibility
+
+Then fix the highest-impact problems first.
+
+Do not perform cosmetic patching.
+
+Replace bad UI architecture where necessary.
+
+If an existing component is fundamentally wrong, replace it instead of repeatedly patching it.
+
+Preserve working Android launcher infrastructure where appropriate.
+
+Do not destroy working launcher functionality simply to redesign the appearance.
+
+---
+
+41. PRIORITY ORDER
+
+Implement improvements in this order:
+
+1. Real Home behavior
+2. First-run experience
+3. Premium Home
+4. Modern application discovery
+5. Search
+6. App drawer redesign
+7. Home customization
+8. Astra Settings
+9. Wallpaper system
+10. Icon system
+11. Folders
+12. Dock
+13. Widgets
+14. Gestures
+15. Notification integration
+16. Optional system surfaces
+17. Motion polish
+18. Performance optimization
+19. Accessibility
+20. Final visual QA
+
+Do not spend most development time polishing low-priority animations while the Home experience remains poor.
+
+Core UX comes first.
+
+---
+
+42. TEST THE PRODUCT AS A USER
+
+After implementation, stop thinking like a developer.
+
+Use Astra as a normal phone user would.
+
+Install Astra.
+
+Set it as the default Home application.
+
+Press Home.
+
+Look at the Home screen.
+
+Ask:
+
+Does this feel like a premium phone?
+
+Can I immediately understand what to do?
+
+Can I find an application quickly?
+
+Can I customize my Home easily?
+
+Can I change wallpaper naturally?
+
+Can I add widgets?
+
+Can I organize applications?
+
+Can I search?
+
+Can I access settings?
+
+Does everything feel visually connected?
+
+Does anything feel like a developer prototype?
+
+Does anything look like an outdated Android launcher?
+
+Does anything feel like an application sitting on top of another launcher?
+
+If yes, fix it.
+
+Do not rationalize poor UX because the underlying code works.
+
+---
+
+43. DEVICE VALIDATION
+
+Test the complete experience on the actual target Android/TECNO device.
+
+Verify:
+
+- Home button
+- gesture navigation
+- application launch
+- Home return
+- app drawer
+- search
+- folders
+- widgets
+- wallpaper
+- settings
+- package installation
+- package removal
+- reboot
+- process recreation
+- memory pressure
+- permission flows
+
+Do not rely exclusively on emulator behavior.
+
+The real device is the final authority for launcher behavior.
+
+---
+
+44. HIOS COMPATIBILITY
+
+Because Astra is intended to run on a TECNO/HiOS device, explicitly test OEM behavior.
+
+Verify:
+
+- Astra can become the selected default Home application
+- pressing Home resolves to Astra
+- Astra is not merely an ordinary application sitting above HiOS Launcher
+- Astra does not depend on HiOS Launcher being visible underneath it
+- HiOS does not unexpectedly restore itself as the active Home destination
+- Astra survives reboot
+- Astra survives process recreation
+- system navigation behaves correctly
+- gesture navigation behaves correctly
+- launching applications behaves correctly
+- returning Home always returns to Astra
+
+If HiOS imposes OEM-specific restrictions, identify them precisely.
+
+Do not fake a solution.
+
+Do not hide an OEM problem by simply drawing an opaque Astra surface over it.
+
+---
+
+45. PERFORMANCE ON TARGET DEVICE
+
+The target device is not a flagship.
+
+Optimize Astra specifically for constrained Android hardware.
+
+The Home screen must remain responsive.
+
+Opening Search should feel immediate.
+
+Opening App Discovery should feel immediate.
+
+Opening folders should feel immediate.
+
+Scrolling should remain smooth.
+
+Launching applications should not introduce unnecessary delay.
+
+Do not use expensive visual effects everywhere.
+
+Use progressive enhancement.
+
+LOW-END HARDWARE:
+
+- fast rendering
+- restrained blur
+- minimal background processing
+- optimized icons
+- limited animation complexity
+
+BETTER HARDWARE:
+
+- higher-quality blur where appropriate
+- richer visual effects where safe
+- enhanced transitions where performance allows
+
+Never allow visual effects to compromise the fundamental launcher experience.
+
+---
+
+46. NO ADVERTISING
+
+This is an explicit product requirement.
+
+Astra must be completely ad-free.
+
+Do not implement:
+
+- advertisements
+- sponsored applications
+- sponsored search results
+- promotional banners
+- advertising preferences
+- ad SDKs
+- advertising tracking
+- promotional launcher cards
+- sponsored recommendations
+
+Do not add an “Ads” section to Settings.
+
+There is no advertising system.
+
+Astra is a product experience, not an advertising surface.
+
+---
+
+47. PRIVACY
+
+Astra should minimize unnecessary data collection.
+
+Do not send launcher usage information to external servers unless explicitly required by a feature and clearly disclosed.
+
+Prefer local processing for:
+
+- application indexing
+- recent usage
+- favorites
+- search ranking
+- workspace state
+- personalization
+- launcher configuration
+
+Do not require an online account simply to use the launcher.
+
+Core launcher functionality should work locally.
+
+The user should feel that Astra belongs to them.
+
+---
+
+48. FINAL DEFINITION OF ASTRA
+
+Astra is a real Android launcher with a premium system-level Home experience.
+
+It is:
+
+- not a command-line launcher
+- not merely an app drawer
+- not an AI demo
+- not a fake operating system
+- not an iOS clone
+- not a Samsung clone
+- not a Pixel clone
+- not a Nothing clone
+- not an advertising platform
+
+It is an original Android Home environment.
+
+The technical foundation must be real.
+
+The UI/UX must be premium.
+
+The experience must be coherent.
+
+The customization must be deep.
+
+The default experience must already be beautiful.
+
+Application discovery must feel modern.
+
+The launcher must remain fast.
+
+The platform limitations must be respected.
+
+---
+
+49. FINAL BUILD AND VALIDATION
+
+After all changes:
+
+1. Build the application.
+2. Run static analysis.
+3. Run unit tests.
+4. Run available instrumentation tests.
+5. Install the APK.
+6. Set Astra as the default Home application.
+7. Test the complete first-run experience.
+8. Test the complete Home experience.
+9. Test application discovery.
+10. Test application launching.
+11. Test returning Home.
+12. Test Search.
+13. Test folders.
+14. Test the dock.
+15. Test widgets.
+16. Test wallpaper selection.
+17. Test Home customization.
+18. Test Astra Settings.
+19. Test gestures.
+20. Test notification integration where enabled.
+21. Test reboot.
+22. Test process recreation.
+23. Test low-memory behavior.
+24. Test HiOS behavior.
+
+Do not claim success without evidence.
+
+If something cannot be tested, explicitly mark it:
+
+NOT TESTED
+
+Do not convert “not tested” into “passed.”
+
+Do not fabricate device testing.
+
+Do not fabricate performance results.
+
+Do not fabricate Android permissions.
+
+---
+
+50. FINAL REPORT
+
+When implementation is complete, provide a technical completion report containing:
+
+Architecture
+
+Explain what was changed in the launcher architecture.
+
+Home
+
+Explain how Astra now behaves as the actual Android Home application.
+
+UX
+
+Explain the major UX changes.
+
+Visual System
+
+Explain the implemented Astra visual language.
+
+First Run
+
+Explain the new installation and onboarding experience.
+
+Application Discovery
+
+Explain how users discover applications without relying on primitive A-Z navigation.
+
+Search
+
+Explain what search can actually do.
+
+Settings
+
+List the Astra Settings areas and what they control.
+
+Customization
+
+List what users can personalize.
+
+Android Integration
+
+List the Android APIs actually used.
+
+Permissions
+
+List every permission requested and explain why it is required.
+
+Performance
+
+Explain what was optimized for low-end hardware.
+
+HiOS
+
+Explain what was tested specifically on TECNO/HiOS.
+
+Testing
+
+List actual PASS/FAIL results.
+
+Build
+
+Provide the actual build result.
+
+Git
+
+Provide the actual commit hash and branch only if a commit and push genuinely occurred.
+
+Remaining Limitations
+
+List real Android, OEM, or hardware limitations.
+
+Do not fabricate anything.
+
+---
+
+FINAL INSTRUCTION
+
+The current implementation is a foundation, not the finished Astra product.
+
+Do not defend existing bad UX.
+
+Do not preserve bad UI merely because it already exists.
+
+Do not make cosmetic changes and call the redesign complete.
+
+Rebuild the experience properly.
+
+Astra must be treated as a complete launcher product, not a collection of screens.
+
+The finished experience should make the user feel that their Android phone has been transformed into a coherent premium environment.
+
+When the user installs Astra, sets it as Home, and returns to the Home screen, the immediate reaction should NOT be:
+
+“Where are the settings?”
+
+“Why is this just an app drawer?”
+
+“Why am I seeing raw commands?”
+
+“Why does this look like an old launcher?”
+
+“Why do I have to customize everything before it looks good?”
+
+“Why is HiOS still behaving like the launcher underneath?”
+
+The reaction should be:
+
+“This is my new Home.”
+
+The launcher must feel finished immediately after setup.
+
+The user should be able to customize it further through Astra Settings, but customization must enhance an already beautiful default experience rather than rescue a poor one.
+
+Astra must provide:
+
+- a premium Home screen
+- modern application discovery
+- intelligent search
+- beautiful first-run setup
+- deep Home customization
+- wallpaper integration
+- real widgets
+- real application icons
+- folders
+- dock
+- gestures
+- polished settings
+- optional notification integration
+- truthful system integration
+- no advertisements
+- strong privacy
+- low-end performance
+- real Android launcher behavior
+
+Do not return to the old prototype mindset.
+
+Do not optimize for screenshots.
+
+Do not optimize merely for compilation.
+
+Build the actual product.
+
+Astra must be a real launcher technically and a premium launcher experientially.
+
+That is the standard.

@@ -45,13 +45,19 @@ import kotlinx.coroutines.launch
 private const val TAG = "AstraLauncherPlatform"
 
 /**
- * 1. Capability Matrix Inspector (Section 27 & 28)
+ * 1. Capability Matrix & TECNO/HiOS Inspector (Rebuild Sections 15, 25, 44)
  */
 class AstraCapabilityManager(private val context: Context?) {
 
     fun inspectCapabilities(): AstraCapabilityReport {
         val ctx = context ?: return AstraCapabilityReport()
         val isHome = AstraRoleHomeManager.isDefaultHome(ctx)
+        val currentDefaultPkg = AstraRoleHomeManager.resolveCurrentDefaultHomePackage(ctx)
+        val isHiOs = Build.MANUFACTURER.contains("TECNO", ignoreCase = true) ||
+            Build.BRAND.contains("TECNO", ignoreCase = true) ||
+            Build.DISPLAY.contains("HiOS", ignoreCase = true) ||
+            currentDefaultPkg.contains("transsion", ignoreCase = true) ||
+            currentDefaultPkg.contains("hilauncher", ignoreCase = true)
         val hasNotif = isNotificationListenerEnabled(ctx)
         val launcherApps = ctx.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
         val supportsShortcuts = try {
@@ -64,6 +70,8 @@ class AstraCapabilityManager(private val context: Context?) {
         return AstraCapabilityReport(
             canBeDefaultHome = true,
             isCurrentlyDefaultHome = isHome,
+            currentDefaultHomePackage = currentDefaultPkg,
+            isHiOsDetectedOnDevice = isHiOs,
             hasNotificationAccess = hasNotif,
             canHostWidgets = true,
             canReadPackages = true,
@@ -83,6 +91,7 @@ class AstraCapabilityManager(private val context: Context?) {
             val activeNet = cm?.activeNetwork
             val caps = if (activeNet != null) cm.getNetworkCapabilities(activeNet) else null
             val isOffline = caps == null || !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
             val alarmManager = ctx.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
             val nextAlarm = try {
@@ -98,9 +107,12 @@ class AstraCapabilityManager(private val context: Context?) {
                 batteryPercent = batteryPct.coerceIn(-1, 100),
                 isCharging = isCharging,
                 isLowBattery = batteryPct in 0..15 && !isCharging,
+                isWifiConnected = isWifi,
                 isOffline = isOffline,
                 lowMemoryPressure = false,
-                nextAlarmLabel = nextAlarm
+                nextAlarmLabel = nextAlarm,
+                manufacturer = Build.MANUFACTURER ?: "",
+                model = Build.MODEL ?: ""
             )
         } catch (_: Throwable) {
             AstraDeviceStatus()
@@ -121,9 +133,19 @@ class AstraCapabilityManager(private val context: Context?) {
 }
 
 /**
- * 2. Default Launcher Role Manager (`ROLE_HOME` — Section 3)
+ * 2. Default Launcher Role Manager (`ROLE_HOME` & HiOS Default Home Resolver — Rebuild Sections 1 & 44)
  */
 object AstraRoleHomeManager {
+
+    fun resolveCurrentDefaultHomePackage(context: Context): String {
+        return try {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            val resolved = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            resolved?.activityInfo?.packageName.orEmpty()
+        } catch (_: Throwable) {
+            ""
+        }
+    }
 
     fun isDefaultHome(context: Context): Boolean {
         return try {
@@ -133,9 +155,7 @@ object AstraRoleHomeManager {
                     if (roleManager.isRoleHeld(RoleManager.ROLE_HOME)) return true
                 }
             }
-            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-            val resolved = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-            resolved?.activityInfo?.packageName == context.packageName
+            resolveCurrentDefaultHomePackage(context) == context.packageName
         } catch (_: Throwable) {
             false
         }

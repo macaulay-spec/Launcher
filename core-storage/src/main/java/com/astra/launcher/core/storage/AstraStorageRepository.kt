@@ -8,9 +8,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 /**
- * Local-First 2D Launcher Workspace & Preferences Repository (Sections 4, 14, 15, 29, 31).
- * Persists 2D grid coordinates (page, cellX, cellY, spanX, spanY), folders, dock slots,
- * widgets, usage stats, and all 14 launcher settings sections.
+ * Local-First 2D Launcher Workspace, First-Run Setup & Personalization Repository.
+ * Zero cloud requirement, zero advertising, 100% local persistence across reboot and process death.
  */
 class AstraStorageRepository(context: Context? = null) {
 
@@ -68,8 +67,49 @@ class AstraStorageRepository(context: Context? = null) {
     }
 
     /**
-     * Populates the initial 2D workspace and dock strictly from REAL installed applications
-     * discovered on the user's device when the launcher runs for the first time.
+     * Completes the First-Run Setup flow (Rebuild Section 2 & 32) and populates a polished Home
+     * matching the user's selected `HomeDensityMode` (`MINIMAL`, `BALANCED`, or `DENSE`).
+     */
+    fun completeFirstRunSetup(
+        preset: AstraThemePreset,
+        densityMode: HomeDensityMode,
+        iconStyle: AstraIconStyle,
+        swipeDownAction: SwipeDownAction,
+        installedApps: List<AstraAppEntry>
+    ) {
+        updateThemeSettings { cur ->
+            cur.copy(
+                themePreset = preset,
+                wallpaperId = preset.defaultWallpaper,
+                themeMode = if (preset.isLightDefault) AstraThemeMode.LIGHT else AstraThemeMode.DARK,
+                customAccentHex = preset.primaryAccentHex,
+                iconStyle = iconStyle
+            )
+        }
+        updateGesturePreferences { cur ->
+            cur.copy(swipeDownAction = swipeDownAction)
+        }
+        updateHomeLayout { cur ->
+            cur.copy(
+                hasCompletedFirstRunSetup = true,
+                isInitialized = false,
+                densityMode = densityMode,
+                gridColumns = densityMode.defaultColumns,
+                gridRows = densityMode.defaultRows,
+                items = emptyList(),
+                dockItems = emptyList()
+            )
+        }
+        populateInitialWorkspaceFromInstalledApps(installedApps)
+    }
+
+    fun reopenFirstRunSetup() {
+        updateHomeLayout { it.copy(hasCompletedFirstRunSetup = false) }
+    }
+
+    /**
+     * Populates the initial 2D workspace, favorites, and dock strictly from REAL installed applications
+     * discovered on the user's device, tailored to the chosen `HomeDensityMode` (Minimal / Balanced / Dense).
      * Never injects fake applications.
      */
     fun populateInitialWorkspaceFromInstalledApps(installedApps: List<AstraAppEntry>) {
@@ -79,7 +119,6 @@ class AstraStorageRepository(context: Context? = null) {
             return
         }
 
-        // Select up to dockSlotCount real installed apps for the Dock
         val dockCandidates = selectPreferredRealAppsForDock(installedApps, current.dockSlotCount)
         val dockItems = dockCandidates.mapIndexed { idx, app ->
             DockSlotItem(
@@ -92,16 +131,18 @@ class AstraStorageRepository(context: Context? = null) {
         }
 
         val dockComponents = dockCandidates.map { it.componentName }.toSet()
+        val maxInitialApps = current.densityMode.initialWorkspaceCount
         val workspaceCandidates = installedApps
             .filterNot { it.componentName in dockComponents }
-            .take(current.gridColumns * 2)
+            .take(maxInitialApps)
 
-        // Place initial workspace apps starting at row 2 (cellY = 2..3) on page 0
-        // so rows 0..1 remain calm for the wallpaper and clock/date header (Section 19).
         val cols = current.gridColumns.coerceAtLeast(3)
+        // Place curated apps in the lower ergonomic zone of Page 0 (rows 2..4)
+        // so rows 0..1 remain open for the spatial clock, contextual summary, and wallpaper breathing room!
+        val startRow = if (current.densityMode == HomeDensityMode.MINIMAL) 3 else 2
         val workspaceItems = workspaceCandidates.mapIndexed { index, app ->
             val cellX = index % cols
-            val cellY = (2 + (index / cols)).coerceAtMost(current.gridRows - 1)
+            val cellY = (startRow + (index / cols)).coerceAtMost(current.gridRows - 1)
             WorkspaceCellItem(
                 id = "item_${UUID.randomUUID()}",
                 page = 0,
@@ -117,11 +158,16 @@ class AstraStorageRepository(context: Context? = null) {
             )
         }
 
+        val initialFavorites = (dockCandidates.take(4) + workspaceCandidates.take(4))
+            .map { it.componentName }
+            .toSet()
+
         updateHomeLayout { layout ->
             layout.copy(
                 isInitialized = true,
                 items = workspaceItems,
-                dockItems = dockItems
+                dockItems = dockItems,
+                favoriteComponents = layout.favoriteComponents.ifEmpty { initialFavorites }
             )
         }
     }
@@ -133,8 +179,8 @@ class AstraStorageRepository(context: Context? = null) {
         val chosen = mutableListOf<AstraAppEntry>()
         val roleMatchers: List<(AstraAppEntry) -> Boolean> = listOf(
             { it.packageName.contains("dialer", true) || it.packageName.contains("telecom", true) || it.label.equals("Phone", true) },
-            { it.packageName.contains("messaging", true) || it.packageName.contains("mms", true) || it.label.contains("Message", true) },
-            { it.packageName.contains("chrome", true) || it.packageName.contains("browser", true) || it.packageName.contains("webview", true) },
+            { it.packageName.contains("messaging", true) || it.packageName.contains("mms", true) || it.packageName.contains("whatsapp", true) || it.label.contains("Message", true) },
+            { it.packageName.contains("chrome", true) || it.packageName.contains("browser", true) || it.packageName.contains("firefox", true) },
             { it.packageName.contains("camera", true) || it.label.contains("Camera", true) },
             { it.packageName.contains("settings", true) || it.label.equals("Settings", true) }
         )
@@ -152,8 +198,19 @@ class AstraStorageRepository(context: Context? = null) {
         return chosen
     }
 
+    fun toggleFavoriteApp(componentName: String) {
+        updateHomeLayout { cur ->
+            val next = if (componentName in cur.favoriteComponents) {
+                cur.favoriteComponents - componentName
+            } else {
+                cur.favoriteComponents + componentName
+            }
+            cur.copy(favoriteComponents = next)
+        }
+    }
+
     /**
-     * Reconciles workspace items, folders, and dock when a package is uninstalled or disabled (Section 7).
+     * Reconciles workspace items, folders, and dock when a package is uninstalled or disabled.
      */
     fun reconcileWithInstalledPackages(installedApps: List<AstraAppEntry>) {
         if (installedApps.isEmpty()) return
@@ -172,7 +229,7 @@ class AstraStorageRepository(context: Context? = null) {
                     WorkspaceItemType.FOLDER -> {
                         val remaining = item.folderItems.filter { it.packageName in validPackages }
                         if (remaining.isEmpty()) {
-                            null // Delete folder when empty (Section 14)
+                            null
                         } else {
                             item.copy(folderItems = remaining)
                         }
@@ -192,9 +249,6 @@ class AstraStorageRepository(context: Context? = null) {
         }
     }
 
-    /**
-     * Checks if a 2D rectangular region (cellX..cellX+spanX-1, cellY..cellY+spanY-1) on `page` is free.
-     */
     fun isGridRegionFree(
         page: Int,
         cellX: Int,
@@ -219,8 +273,7 @@ class AstraStorageRepository(context: Context? = null) {
 
     fun findFirstFreeCell(page: Int, spanX: Int = 1, spanY: Int = 1): Pair<Int, Int>? {
         val layout = _homeLayout.value
-        // Prefer rows below row 0 on page 0 if clock is shown
-        val startRow = if (page == 0 && layout.showClockOnWorkspace) 1 else 0
+        val startRow = if (page == 0 && layout.showClockOnWorkspace) 2 else 0
         for (y in startRow..(layout.gridRows - spanY)) {
             for (x in 0..(layout.gridColumns - spanX)) {
                 if (isGridRegionFree(page, x, y, spanX, spanY)) {
@@ -238,9 +291,6 @@ class AstraStorageRepository(context: Context? = null) {
         return null
     }
 
-    /**
-     * Pins a real installed application to the first available 2D coordinate cell.
-     */
     fun pinAppToWorkspace(app: AstraAppEntry, preferredPage: Int = 0): WorkspaceCellItem? {
         val layout = _homeLayout.value
         if (layout.lockWorkspaceLayout) return null
@@ -269,10 +319,19 @@ class AstraStorageRepository(context: Context? = null) {
     }
 
     /**
-     * Moves an item to (targetPage, targetCellX, targetCellY).
-     * If an APP is dropped onto another APP, merges them into a FOLDER.
-     * If an APP is dropped onto an existing FOLDER, adds it to the FOLDER.
+     * Suggests an automatic smart folder name based on the member apps' package/labels (Rebuild Section 11).
      */
+    fun suggestSmartFolderName(members: List<FolderMemberApp>): String {
+        val combined = members.joinToString(" ") { "${it.packageName} ${it.label}".lowercase() }
+        return when {
+            combined.contains("whatsapp") || combined.contains("telegram") || combined.contains("message") || combined.contains("dialer") -> "Communication"
+            combined.contains("youtube") || combined.contains("spotify") || combined.contains("music") || combined.contains("camera") || combined.contains("photo") -> "Media"
+            combined.contains("chrome") || combined.contains("firefox") || combined.contains("browser") -> "Browsers"
+            combined.contains("docs") || combined.contains("calendar") || combined.contains("mail") || combined.contains("gmail") -> "Productivity"
+            else -> "Folder"
+        }
+    }
+
     fun moveOrMergeWorkspaceItem(
         itemId: String,
         targetPage: Int,
@@ -290,7 +349,6 @@ class AstraStorageRepository(context: Context? = null) {
                 targetCellY in item.cellY until (item.cellY + item.spanY)
         }
 
-        // Case 1: Target region is completely free
         if (occupant == null && isGridRegionFree(targetPage, targetCellX, targetCellY, moving.spanX, moving.spanY, itemId)) {
             updateHomeLayout { cur ->
                 cur.copy(
@@ -304,13 +362,13 @@ class AstraStorageRepository(context: Context? = null) {
             return true
         }
 
-        // Case 2: Dropping an APP onto another APP creates a FOLDER (Section 14)
         if (moving.itemType == WorkspaceItemType.APP && occupant?.itemType == WorkspaceItemType.APP) {
             val folderId = "folder_${UUID.randomUUID()}"
             val members = listOf(
                 FolderMemberApp(occupant.packageName, occupant.componentName, occupant.userSerial, occupant.label),
                 FolderMemberApp(moving.packageName, moving.componentName, moving.userSerial, moving.label)
             )
+            val autoName = suggestSmartFolderName(members)
             val folderCell = WorkspaceCellItem(
                 id = folderId,
                 page = targetPage,
@@ -319,7 +377,7 @@ class AstraStorageRepository(context: Context? = null) {
                 spanX = 1,
                 spanY = 1,
                 itemType = WorkspaceItemType.FOLDER,
-                label = "Folder",
+                label = autoName,
                 folderId = folderId,
                 folderItems = members
             )
@@ -331,7 +389,6 @@ class AstraStorageRepository(context: Context? = null) {
             return true
         }
 
-        // Case 3: Dropping an APP onto an existing FOLDER adds it to that folder
         if (moving.itemType == WorkspaceItemType.APP && occupant?.itemType == WorkspaceItemType.FOLDER) {
             val newMember = FolderMemberApp(moving.packageName, moving.componentName, moving.userSerial, moving.label)
             val alreadyInFolder = occupant.folderItems.any { it.componentName == newMember.componentName }
@@ -350,7 +407,6 @@ class AstraStorageRepository(context: Context? = null) {
             return true
         }
 
-        // Case 4: Swap positions if both are 1x1 items
         if (occupant != null && moving.spanX == 1 && moving.spanY == 1 && occupant.spanX == 1 && occupant.spanY == 1) {
             updateHomeLayout { cur ->
                 cur.copy(
@@ -385,7 +441,7 @@ class AstraStorageRepository(context: Context? = null) {
             spanX = 1,
             spanY = 1,
             itemType = WorkspaceItemType.FOLDER,
-            label = title.ifBlank { "Folder" },
+            label = title.ifBlank { suggestSmartFolderName(apps) },
             folderId = folderId,
             folderItems = apps
         )
@@ -425,9 +481,6 @@ class AstraStorageRepository(context: Context? = null) {
         }
     }
 
-    /**
-     * Removes an application from a folder. Deletes the folder automatically when empty (Section 14).
-     */
     fun removeAppFromFolder(folderId: String, componentName: String) {
         updateHomeLayout { cur ->
             val updated = cur.items.mapNotNull { item ->
@@ -489,7 +542,6 @@ class AstraStorageRepository(context: Context? = null) {
                 return widgetItem
             }
         }
-        // If current pages are full, add a new page and place the widget at (0, 0)
         val newPageIndex = layout.pageCount
         val widgetItem = WorkspaceCellItem(
             id = "widget_$appWidgetId",
@@ -714,11 +766,17 @@ class AstraStorageRepository(context: Context? = null) {
 
     private fun saveHomeLayout(h: HomeLayout) {
         putString(KEY_WS_INITIALIZED, h.isInitialized.toString())
+        putString(KEY_FIRST_RUN_DONE, h.hasCompletedFirstRunSetup.toString())
+        putString(KEY_DENSITY_MODE, h.densityMode.id)
         putString(KEY_PAGE_COUNT, h.pageCount.toString())
         putString(KEY_GRID_COLS, h.gridColumns.toString())
         putString(KEY_GRID_ROWS, h.gridRows.toString())
+        putString(KEY_DOCK_ENABLED, h.dockEnabled.toString())
         putString(KEY_DOCK_SLOTS, h.dockSlotCount.toString())
+        putString(KEY_DOCK_SEARCH, h.showDockSearchButton.toString())
+        putString(KEY_SHOW_PAGE_IND, h.showPageIndicator.toString())
         putString(KEY_SHOW_CLOCK_WS, h.showClockOnWorkspace.toString())
+        putString(KEY_SHOW_CONTEXT_SUGGEST, h.showContextualSuggestionsOnHome.toString())
         putString(KEY_LOCK_WS, h.lockWorkspaceLayout.toString())
         putString(KEY_HIDDEN_PKGS, h.hiddenComponents.joinToString(",") { escapeField(it) })
         putString(KEY_FAV_PKGS, h.favoriteComponents.joinToString(",") { escapeField(it) })
@@ -764,6 +822,8 @@ class AstraStorageRepository(context: Context? = null) {
         val d = HomeLayout()
         return try {
             val initialized = getString(KEY_WS_INITIALIZED, "false") == "true"
+            val firstRunDone = getString(KEY_FIRST_RUN_DONE, "false") == "true"
+            val densityMode = HomeDensityMode.fromId(getString(KEY_DENSITY_MODE, d.densityMode.id))
             val pageCount = (getString(KEY_PAGE_COUNT, d.pageCount.toString()).toIntOrNull() ?: d.pageCount).coerceIn(1, 8)
             val cols = (getString(KEY_GRID_COLS, d.gridColumns.toString()).toIntOrNull() ?: d.gridColumns).coerceIn(3, 6)
             val rows = (getString(KEY_GRID_ROWS, d.gridRows.toString()).toIntOrNull() ?: d.gridRows).coerceIn(4, 7)
@@ -832,11 +892,17 @@ class AstraStorageRepository(context: Context? = null) {
 
             HomeLayout(
                 isInitialized = initialized,
+                hasCompletedFirstRunSetup = firstRunDone,
+                densityMode = densityMode,
                 pageCount = pageCount,
                 gridColumns = cols,
                 gridRows = rows,
+                dockEnabled = getString(KEY_DOCK_ENABLED, "true") == "true",
                 dockSlotCount = dockSlots,
+                showDockSearchButton = getString(KEY_DOCK_SEARCH, "false") == "true",
+                showPageIndicator = getString(KEY_SHOW_PAGE_IND, "true") == "true",
                 showClockOnWorkspace = getString(KEY_SHOW_CLOCK_WS, "true") == "true",
+                showContextualSuggestionsOnHome = getString(KEY_SHOW_CONTEXT_SUGGEST, "true") == "true",
                 lockWorkspaceLayout = getString(KEY_LOCK_WS, "false") == "true",
                 items = parsedItems,
                 dockItems = parsedDock,
@@ -857,9 +923,6 @@ class AstraStorageRepository(context: Context? = null) {
         }
     }
 
-    /**
-     * Simulates or injects raw workspace payload for testing corruption recovery (Section 31).
-     */
     fun injectRawWorkspacePayloadForRecoveryTest(rawPayload: String) {
         putString(KEY_WS_ITEMS_V2, rawPayload)
         _homeLayout.value = loadHomeLayout()
@@ -892,18 +955,21 @@ class AstraStorageRepository(context: Context? = null) {
     private fun saveNotificationPreferences(n: NotificationPreferences) {
         putString(KEY_NOTIF_BADGES, n.showAppBadgeDots.toString())
         putString(KEY_NOTIF_COUNTS, n.showNotificationCountOnMenu.toString())
+        putString(KEY_NOTIF_PILL, n.showHomeNotificationPill.toString())
     }
 
     private fun loadNotificationPreferences(): NotificationPreferences {
         val d = NotificationPreferences()
         return NotificationPreferences(
             showAppBadgeDots = getString(KEY_NOTIF_BADGES, d.showAppBadgeDots.toString()) == "true",
-            showNotificationCountOnMenu = getString(KEY_NOTIF_COUNTS, d.showNotificationCountOnMenu.toString()) == "true"
+            showNotificationCountOnMenu = getString(KEY_NOTIF_COUNTS, d.showNotificationCountOnMenu.toString()) == "true",
+            showHomeNotificationPill = getString(KEY_NOTIF_PILL, d.showHomeNotificationPill.toString()) == "true"
         )
     }
 
     private fun saveGesturePreferences(g: GesturePreferences) {
         putString(KEY_GESTURE_DOWN, g.swipeDownAction.id)
+        putString(KEY_GESTURE_DOUBLE_TAP, g.doubleTapAction.id)
         putString(KEY_HAPTICS, g.hapticsEnabled.toString())
     }
 
@@ -911,6 +977,7 @@ class AstraStorageRepository(context: Context? = null) {
         val d = GesturePreferences()
         return GesturePreferences(
             swipeDownAction = SwipeDownAction.fromId(getString(KEY_GESTURE_DOWN, d.swipeDownAction.id)),
+            doubleTapAction = DoubleTapAction.fromId(getString(KEY_GESTURE_DOUBLE_TAP, d.doubleTapAction.id)),
             hapticsEnabled = getString(KEY_HAPTICS, d.hapticsEnabled.toString()) == "true"
         )
     }
@@ -922,6 +989,7 @@ class AstraStorageRepository(context: Context? = null) {
         putString(KEY_PERF_LOW_END, p.lowEndDeviceModeOverride.toString())
         putString(KEY_DRAWER_CATS, p.showDrawerCategories.toString())
         putString(KEY_DRAWER_RECENT, p.showDrawerRecentRow.toString())
+        putString(KEY_APP_SORT, p.appSortOrder.id)
     }
 
     private fun loadPerformancePreferences(): PerformancePreferences {
@@ -932,7 +1000,8 @@ class AstraStorageRepository(context: Context? = null) {
             blurEnabled = getString(KEY_PERF_BLUR, d.blurEnabled.toString()) == "true",
             lowEndDeviceModeOverride = getString(KEY_PERF_LOW_END, d.lowEndDeviceModeOverride.toString()) == "true",
             showDrawerCategories = getString(KEY_DRAWER_CATS, d.showDrawerCategories.toString()) == "true",
-            showDrawerRecentRow = getString(KEY_DRAWER_RECENT, d.showDrawerRecentRow.toString()) == "true"
+            showDrawerRecentRow = getString(KEY_DRAWER_RECENT, d.showDrawerRecentRow.toString()) == "true",
+            appSortOrder = AppSortOrder.fromId(getString(KEY_APP_SORT, d.appSortOrder.id))
         )
     }
 
@@ -971,11 +1040,17 @@ class AstraStorageRepository(context: Context? = null) {
         private const val KEY_HIGH_CONTRAST = "high_contrast"
 
         private const val KEY_WS_INITIALIZED = "ws_initialized"
+        private const val KEY_FIRST_RUN_DONE = "first_run_done"
+        private const val KEY_DENSITY_MODE = "density_mode"
         private const val KEY_PAGE_COUNT = "page_count"
         private const val KEY_GRID_COLS = "grid_cols"
         private const val KEY_GRID_ROWS = "grid_rows"
+        private const val KEY_DOCK_ENABLED = "dock_enabled"
         private const val KEY_DOCK_SLOTS = "dock_slots"
+        private const val KEY_DOCK_SEARCH = "dock_search"
+        private const val KEY_SHOW_PAGE_IND = "show_page_ind"
         private const val KEY_SHOW_CLOCK_WS = "show_clock_ws"
+        private const val KEY_SHOW_CONTEXT_SUGGEST = "show_context_suggest"
         private const val KEY_LOCK_WS = "lock_ws"
         private const val KEY_HIDDEN_PKGS = "hidden_pkgs"
         private const val KEY_FAV_PKGS = "fav_pkgs"
@@ -992,8 +1067,10 @@ class AstraStorageRepository(context: Context? = null) {
 
         private const val KEY_NOTIF_BADGES = "notif_badges"
         private const val KEY_NOTIF_COUNTS = "notif_counts"
+        private const val KEY_NOTIF_PILL = "notif_pill"
 
         private const val KEY_GESTURE_DOWN = "gesture_down"
+        private const val KEY_GESTURE_DOUBLE_TAP = "gesture_double_tap"
         private const val KEY_HAPTICS = "haptics"
 
         private const val KEY_PERF_ANIM = "perf_anim"
@@ -1002,5 +1079,6 @@ class AstraStorageRepository(context: Context? = null) {
         private const val KEY_PERF_LOW_END = "perf_low_end"
         private const val KEY_DRAWER_CATS = "drawer_cats"
         private const val KEY_DRAWER_RECENT = "drawer_recent"
+        private const val KEY_APP_SORT = "app_sort"
     }
 }

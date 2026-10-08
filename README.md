@@ -1,41 +1,36 @@
-# Astra Launcher (`com.astra.launcher`) — Real Android Home Launcher
+# Astra Launcher (`com.astra.launcher`) — v2.1.0 Product, UX & System Experience
 
-Astra Launcher is a real, persistent Android Home Launcher (`CATEGORY_HOME` + `CATEGORY_DEFAULT`, `RoleManager.ROLE_HOME`) engineered with a 2D coordinate grid workspace, real `LauncherApps` & `PackageManager` discovery, real application icon pipeline with memory caching and live package invalidation, genuine Android `AppWidgetHost` / `AppWidgetManager` widget hosting, and a keyboard-first universal launcher search overlay.
+**Astra Launcher** is a native Kotlin & Jetpack Compose Android Home Launcher (`CATEGORY_HOME` + `CATEGORY_DEFAULT` + `RoleManager.ROLE_HOME` + `singleTask` + `resumeWhilePausing="true"`) engineered for **Android 10+ (API 29–35)** and **TECNO / HiOS** devices.
 
----
-
-## Core Launcher Architecture (`AstraLauncherRoot`)
-
-Unlike fake-OS screen-switcher apps, Astra Launcher is architected around a **persistent Home Workspace** (`AstraLauncherRoot`) where pressing the Android Home button (`Intent.ACTION_MAIN` + `Intent.CATEGORY_HOME` delivered via `onNewIntent`) always returns to the resting workspace:
-
-```text
-AstraLauncherActivity (singleTask, CATEGORY_HOME, CATEGORY_DEFAULT, stateNotNeeded="true")
-└── AstraLauncherRoot
-    ├── AstraWallpaperSurface (Bundled Astra Wallpapers OR Android System Wallpaper via windowShowWallpaper)
-    ├── AstraWorkspaceLayer (Persistent Multi-Page 2D Coordinate Grid + Live System Clock + PageIndicator + Dock)
-    ├── AstraAppDrawerOverlay (Real installed apps via LauncherApps, Work Profile tab, A–Z fast scroller, filter bar)
-    ├── AstraSearchOverlay (Keyboard-first search: Enter-to-launch #1, Escape-to-close, arrow navigation, IME-safe)
-    ├── AstraFolderOverlay (Create by dropping app onto app, rename, reorder, add/remove apps, auto-delete when empty)
-    ├── AstraBoundWidgetHostCell & AstraWidgetPickerSheet (Real AppWidgetHost ID 2026 & AppWidgetManager binding)
-    ├── AstraAppContextMenuSheet (Real LauncherApps ShortcutQuery shortcuts, Move, Pin, Hide, App Info, Uninstall)
-    ├── AstraPersonalizationOverlay (Wallpaper source, Orbit/Nocturne/Horizon families, Icon treatments, Grid size)
-    └── AstraSettingsOverlay (All 14 persistent launcher settings categories)
-```
+Every screen in Astra is designed to feel calm, atmospheric, tactile, and intelligent—from the **6-Step First-Run Setup ("Your phone, redesigned.")** to the **Modern Application Discovery Surface**, **System-Level Natural-Language Search**, **Composite Live Wallpaper Studio**, and **Persistent 2D Spatial Home Workspace**.
 
 ---
 
-## Module Structure (11 Modules)
+## 1. Product & Architectural Highlights (`Rebuild` Sections 1–50)
 
-| Module | Responsibility |
+| Pillar | Implementation |
 |---|---|
-| `:app` | `AstraLauncherActivity` (`CATEGORY_HOME`, `onNewIntent`, `AppWidgetHost` & `ROLE_HOME` lifecycle), `AstraNotificationListenerService`, `AstraOrbitalClockWidgetProvider`, Robolectric acceptance tests |
-| `:core-storage` | 2D coordinate workspace model (`WorkspaceCellItem`, `DockSlotItem`, `FolderMemberApp`), folder merge/auto-delete engine, corruption recovery, 14 settings persistence |
-| `:core-platform` | `AstraRoleHomeManager`, `AstraPackageRepository` (`LauncherApps` + live `LauncherApps.Callback` & package `BroadcastReceiver`), `AstraIconPipeline` (`LauncherActivityInfo` -> normalized `Bitmap` -> `LruCache`), `AstraWidgetHostManager` (`AppWidgetHost` + `AppWidgetManager`), `AstraSystemController` (`StatusBarManager` shade expansion, `WallpaperManager`) |
-| `:core-design` | WCAG contrast-enforced `AstraColorEngine`, live system `AstraClock`, real-icon `AstraAppIcon`, `AstraWallpaperSurface`, `AstraDock` |
-| `:core-performance` | Low-RAM visual budget engine (`ActivityManager.isLowRamDevice`, adaptive cache sizing) |
-| `:feature-home` | Multi-page 2D coordinate grid workspace, drag-and-drop / cell move & folder merge, `AstraFolderOverlay`, `AstraAppContextMenuSheet`, `AstraEditModeBar` |
-| `:feature-apps` | Real App Drawer / App Library with Work Profile support, A–Z fast-scroll rail, and live filtering |
-| `:feature-search` | Keyboard-first search index & overlay with real apps, shortcuts, settings handoffs, and deterministic math/unit conversion |
-| `:feature-widgets` | Real `AppWidgetHostView` cell container (`AndroidView`) + `AppWidgetManager.installedProviders` picker |
-| `:feature-personalization` | Personalization Studio for system vs bundled wallpapers, icon treatments, clock styles, and grid density |
-| `:feature-settings` | All 14 persistent launcher configuration categories |
+| **Real Default Home Ownership & TECNO / HiOS Compatibility** | `AstraLauncherActivity` declares `android.intent.action.MAIN` + `android.intent.category.HOME` + `android.intent.category.DEFAULT` (`priority="1000"`), `launchMode="singleTask"`, `clearTaskOnLaunch="true"`, `stateNotNeeded="true"`, and `resumeWhilePausing="true"`. `AstraRoleHomeManager` detects the active default home holder (`resolveActivity(CATEGORY_HOME)`) and guides TECNO/HiOS users through `RoleManager.ROLE_HOME` or `Settings.ACTION_HOME_SETTINGS`. |
+| **6-Step First-Run Experience ("Your phone, redesigned.")** | `AstraFirstRunSetupOverlay` welcomes the user on first launch: **(1)** Choose Astra Atmosphere (`ORBIT`, `NOCTURNE`, `HORIZON`) with live preview -> **(2)** Choose Home Density (`Minimal`, `Balanced`, `Dense`) -> **(3)** Choose Icon Treatment (`Original`, `Astra Adaptive`, `Monochrome`) -> **(4)** Choose Home Gestures -> **(5)** Optional Integrations -> **(6)** Set Default Home & *"Welcome to Astra."* |
+| **Hero Home Screen** | Large adaptive clock, live date, contextual time-of-day header (*Morning Focus / Daytime Flow / Evening Calm / Night Quiet*) with real battery & notification pill, generous negative space, spatial 2D grid (`4×5` / `4×6` / `5×5`), smart folders with 2×2 real icon previews, bound Android widgets, and an ergonomic glass/matte dock. |
+| **Modern Application Discovery Surface** | Replaces primitive A–Z grids with a multi-layered discovery experience: **Top Search Bar** -> **Recently Used** strip -> **Favorites & Frequent** grid -> **Contextual Time-of-Day Suggestions** -> **Smart Categories Bento Grid** (*Communication*, *Entertainment & Media*, *Productivity*, *Utilities & System*, *Browsing & Social*, *Games & Other*) -> **All Apps** (with *Most Used* / *A–Z* toggle and alphabetical rail). |
+| **System-Level Search & Natural-Language Actions** | Supports queries like `"open YouTube"`, `"launch Spotify"`, `"wallpaper"`, `"edit home"`, `"turn on Wi-Fi"`, `"Bluetooth"`, `"245 * 18"`, and `"100 km to mi"`. System settings queries hand off truthfully to Android system panels without faking privileged state toggles. |
+| **Live Composite Wallpaper & Style Studio** | Interactive side-by-side preview cards for **ORBIT**, **NOCTURNE FLOW**, and **HORIZON** rendering the real Home clock, icons, widgets, and dock before applying to Astra or the Android system `WallpaperManager`. |
+| **Truthful Control & Notification Surface** | Displays real device battery, ringer mode, Wi-Fi state, next alarm, and real active `NotificationListenerService` notifications (or an honest permission card + one-tap handoff to Android's native Notification Shade / Quick Settings). |
+| **Zero Ads & 100% Local Privacy** | Zero ad SDKs, zero sponsored search results, zero promotional cards, and zero cloud telemetry. |
+
+---
+
+## 2. 11-Module Gradle Architecture
+
+1. **`:app`** — `AstraLauncherActivity`, `AstraNotificationListenerService`, `AstraOrbitalClockWidgetProvider`, `AndroidManifest.xml`, and Robolectric acceptance tests.
+2. **`:core-storage`** — Versioned JSON persistence (`SCHEMA_VERSION = 3`) for 2D workspace items, `HomeDensityMode`, `hasCompletedFirstRunSetup`, `favoriteComponents`, smart folder naming (`suggestSmartFolderName`), and corruption recovery.
+3. **`:core-platform`** — `AstraPackageRepository` (`LauncherApps` + `PackageManager`), `AstraIconPipeline` (real `AdaptiveIconDrawable` + `LruCache`), `AstraWidgetHostManager` (`AppWidgetHost`), `AstraRoleHomeManager` (with TECNO/HiOS detection), and `AstraSystemController`.
+4. **`:core-design`** — `AstraColorEngine` (WCAG 4.5:1 contrast enforcement), `AstraWallpaperSurface` (`ORBIT`, `NOCTURNE FLOW`, `HORIZON`), `AstraRealAppIconTile`, and `AstraHomeDock`.
+5. **`:core-performance`** — `AstraPerformanceManager` (`ActivityManager.isLowRamDevice` and battery-saver budgets).
+6. **`:feature-home`** — `AstraWorkspaceLayer`, `AstraFirstRunSetupOverlay`, `AstraNotificationAndControlOverlay`, `AstraFolderOverlay`, `AstraAppContextMenuSheet`, and `AstraEditModeBar`.
+7. **`:feature-apps`** — `AstraAppDrawerOverlay` (Modern Application Discovery + Smart Categories + All Apps + Hidden Apps).
+8. **`:feature-search`** — `AstraSearchOverlay` and `AstraSearchIndex` (natural-language query parser, apps, shortcuts, settings, Astra surfaces, and calculator/converter).
+9. **`:feature-widgets`** — `AstraWidgetPickerSheet` and `AstraWorkspaceWidgetContainer`.
+10. **`:feature-personalization`** — `AstraPersonalizationOverlay` with live composite Home previews for `ORBIT`, `NOCTURNE FLOW`, and `HORIZON`.
+11. **`:feature-settings`** — `AstraSettingsOverlay` (`Home`, `Appearance`, `Search`, `Gestures`, `Apps`, `Notifications`, `Widgets`, `Performance`, `About Astra`).

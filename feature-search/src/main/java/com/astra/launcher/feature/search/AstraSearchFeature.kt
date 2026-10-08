@@ -66,22 +66,22 @@ import java.util.Locale
 import kotlin.math.roundToLong
 
 enum class SearchSettingAction(val id: String, val title: String, val subtitle: String, val keywords: String) {
-    WIFI("wifi", "Wi-Fi & Internet Panel", "Open Android connectivity panel", "wifi internet network wlan"),
-    BLUETOOTH("bluetooth", "Bluetooth Settings", "Manage paired audio and accessories", "bluetooth bt headphones pair"),
-    DISPLAY("display", "Display & Brightness", "Open Android display settings", "display brightness screen dark mode"),
+    WIFI("wifi", "Wi-Fi & Internet Panel", "Open Android connectivity panel (Android requires user confirmation)", "wifi internet network wlan turn on wifi enable wifi"),
+    BLUETOOTH("bluetooth", "Bluetooth Settings", "Open Android Bluetooth settings (Android requires user confirmation)", "bluetooth bt headphones pair turn on bluetooth"),
+    DISPLAY("display", "Display & Brightness", "Open Android display & brightness settings", "display brightness screen dark mode"),
     SOUND("sound", "Sound & Vibration", "Volume, ringtone, Do Not Disturb", "sound volume audio vibration ring"),
-    WALLPAPER("wallpaper", "Astra Personalization & Wallpaper", "Configure wallpaper, theme, clock, icons", "wallpaper theme style personalize"),
-    DEFAULT_HOME("default_home", "Default Home App Role", "Set or change Android default launcher", "default home role launcher"),
-    NOTIFICATION_SHADE("notif_shade", "Expand Android Notification Shade", "Pull down system status bar notifications", "notifications shade status bar"),
+    WALLPAPER("wallpaper", "Wallpaper & Atmosphere", "Customize Orbit, Nocturne Flow, Horizon or system wallpaper", "wallpaper theme style personalize background"),
+    DEFAULT_HOME("default_home", "Default Home App Role", "Set or verify Astra as your default Android launcher", "default home role launcher hios"),
+    NOTIFICATION_SHADE("notif_shade", "System Notification Shade", "Expand Android's real notification status bar", "notifications shade status bar"),
     SYSTEM_SETTINGS("system_settings", "Android System Settings", "Open full device settings", "settings system android phone")
 }
 
 enum class SearchCommandAction(val id: String, val title: String, val subtitle: String, val keywords: String) {
-    OPEN_APP_DRAWER("open_drawer", "Open App Drawer", "Browse all installed applications", "drawer apps library all"),
-    OPEN_WIDGET_PICKER("open_widgets", "Add Android Widget to Home", "Open AppWidgetManager provider picker", "widget widgets add host"),
-    EDIT_HOME_WORKSPACE("edit_home", "Enter Home Workspace Edit Mode", "Move icons, resize widgets, manage pages", "edit workspace grid pages arrange"),
-    OPEN_ASTRA_SETTINGS("astra_settings", "Astra Launcher Settings", "Configure 14 launcher settings categories", "astra launcher settings config"),
-    REFRESH_PACKAGES("refresh_packages", "Rescan Installed Packages", "Force LauncherApps & icon cache refresh", "refresh rescan packages icons reload")
+    OPEN_APP_DRAWER("open_drawer", "App Discovery", "Browse favorites, recent apps, and smart categories", "drawer apps library discovery"),
+    OPEN_WIDGET_PICKER("open_widgets", "Widgets", "Place real Android widgets onto your Home workspace", "widget widgets add host clock"),
+    EDIT_HOME_WORKSPACE("edit_home", "Customize Home Layout", "Arrange icons, resize widgets, and manage pages", "edit workspace grid pages layout"),
+    OPEN_ASTRA_SETTINGS("astra_settings", "Astra Settings", "Configure Home, Appearance, Icons, Gestures & Privacy", "astra launcher settings config preferences"),
+    REFRESH_PACKAGES("refresh_packages", "Rescan Installed Apps", "Refresh LauncherApps catalog and icon cache", "refresh rescan packages icons reload")
 }
 
 data class SearchCalculationResult(
@@ -107,11 +107,24 @@ data class SearchQueryBundle(
 }
 
 /**
- * Real Launcher Search Index (Section 11).
- * Queries actual installed apps, real LauncherApps shortcuts, honest system settings deep-links,
- * and deterministic local math/unit evaluation.
+ * System-Level Search & Natural-Language Intent Engine (Rebuild Sections 5, 6, 30).
+ * Touch-first and visual when idle; supports natural phrases ("open youtube", "wallpaper", "wifi")
+ * and honest Android system handoffs without pretending to be a terminal.
  */
 object AstraSearchIndex {
+
+    private val naturalPrefixes = listOf("open ", "launch ", "start ", "run ", "go to ")
+
+    fun normalizeNaturalQuery(raw: String): String {
+        val trimmed = raw.trim()
+        val lower = trimmed.lowercase(Locale.getDefault())
+        for (prefix in naturalPrefixes) {
+            if (lower.startsWith(prefix) && trimmed.length > prefix.length) {
+                return trimmed.substring(prefix.length).trim()
+            }
+        }
+        return trimmed
+    }
 
     fun query(
         rawQuery: String,
@@ -120,11 +133,10 @@ object AstraSearchIndex {
         preferences: SearchPreferences
     ): SearchQueryBundle {
         val visibleApps = installedApps.filterNot { it.componentName in hiddenComponents }
-        val q = rawQuery.trim()
+        val q = normalizeNaturalQuery(rawQuery)
         val lower = q.lowercase(Locale.getDefault())
 
         if (q.isEmpty()) {
-            // Zero-query state: show recent/frequent real installed apps + quick launcher commands
             val topApps = visibleApps
                 .sortedWith(
                     compareByDescending<AstraAppEntry> { it.usageScore }
@@ -137,12 +149,16 @@ object AstraSearchIndex {
                 matchedApps = topApps,
                 matchedShortcuts = emptyList(),
                 matchedSettings = listOf(
+                    SearchSettingAction.WALLPAPER,
                     SearchSettingAction.WIFI,
                     SearchSettingAction.BLUETOOTH,
-                    SearchSettingAction.DISPLAY,
-                    SearchSettingAction.WALLPAPER
+                    SearchSettingAction.DISPLAY
                 ),
-                matchedCommands = SearchCommandAction.entries,
+                matchedCommands = listOf(
+                    SearchCommandAction.OPEN_WIDGET_PICKER,
+                    SearchCommandAction.EDIT_HOME_WORKSPACE,
+                    SearchCommandAction.OPEN_ASTRA_SETTINGS
+                ),
                 calculation = null
             )
         }
@@ -188,7 +204,7 @@ object AstraSearchIndex {
             }
         } else emptyList()
 
-        val calc = evaluateExpressionOrConversion(lower)
+        val calc = evaluateExpressionOrConversion(rawQuery.trim().lowercase(Locale.getDefault()))
 
         return SearchQueryBundle(
             query = q,
@@ -222,7 +238,6 @@ object AstraSearchIndex {
 
     fun evaluateExpressionOrConversion(input: String): SearchCalculationResult? {
         val trimmed = input.trim()
-        // Unit conversion: e.g., "10 km to mi", "72 f to c", "5 kg to lb"
         val unitRegex = Regex("""^(-?\d+(?:\.\d+)?)\s*([a-zA-Z°]+)\s+(?:to|in)\s+([a-zA-Z°]+)$""")
         unitRegex.matchEntire(trimmed)?.let { match ->
             val value = match.groupValues[1].toDoubleOrNull() ?: return null
@@ -244,11 +259,10 @@ object AstraSearchIndex {
             return SearchCalculationResult(
                 expression = trimmed,
                 formattedValue = formatted,
-                detailLabel = "Instant Unit Conversion"
+                detailLabel = "Unit Conversion"
             )
         }
 
-        // Deterministic arithmetic: a (+|-|*|/) b
         val mathRegex = Regex("""^\s*(-?\d+(?:\.\d+)?)\s*([+\-*/x×÷])\s*(-?\d+(?:\.\d+)?)\s*$""")
         mathRegex.matchEntire(trimmed)?.let { match ->
             val a = match.groupValues[1].toDoubleOrNull() ?: return null
@@ -269,18 +283,13 @@ object AstraSearchIndex {
             return SearchCalculationResult(
                 expression = "$a $op $b",
                 formattedValue = formatted,
-                detailLabel = "Instant Calculation"
+                detailLabel = "Calculator"
             )
         }
         return null
     }
 }
 
-/**
- * Keyboard-First Launcher Search Overlay (Section 11 & 12).
- * Sits over the persistent Home Workspace with immediate software/hardware keyboard focus,
- * Enter-to-launch top result, Escape-to-close, arrow-key navigation, and IME-safe padding.
- */
 @Composable
 fun AstraSearchOverlay(
     installedApps: List<AstraAppEntry>,
@@ -328,14 +337,14 @@ fun AstraSearchOverlay(
             onLaunchApp(appTarget)
             return
         }
-        val firstSetting = results.matchedSettings.firstOrNull()
-        if (firstSetting != null) {
-            onExecuteSettingAction(firstSetting)
-            return
-        }
         val firstCommand = results.matchedCommands.firstOrNull()
         if (firstCommand != null) {
             onExecuteCommandAction(firstCommand)
+            return
+        }
+        val firstSetting = results.matchedSettings.firstOrNull()
+        if (firstSetting != null) {
+            onExecuteSettingAction(firstSetting)
         }
     }
 
@@ -378,7 +387,7 @@ fun AstraSearchOverlay(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Keyboard-first Search Input Bar
+            // Full-Width System Search Surface Bar
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -405,7 +414,7 @@ fun AstraSearchOverlay(
                     ) {
                         if (query.isEmpty()) {
                             Text(
-                                text = "Search installed apps, shortcuts, settings, math…",
+                                text = "Search apps, settings, widgets, shortcuts…",
                                 style = AstraTypography.BodyL,
                                 color = palette.mutedText,
                                 maxLines = 1,
@@ -460,7 +469,7 @@ fun AstraSearchOverlay(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             LazyColumn(
                 modifier = Modifier
@@ -469,7 +478,6 @@ fun AstraSearchOverlay(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                // Instant Calculation / Unit Conversion Result
                 results.calculation?.let { calc ->
                     item(key = "calc_card") {
                         AstraSurfaceCard(
@@ -506,25 +514,13 @@ fun AstraSearchOverlay(
                     }
                 }
 
-                // Real Installed Applications
                 if (results.matchedApps.isNotEmpty()) {
                     item(key = "apps_header") {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (query.isBlank()) "FREQUENT & INSTALLED APPS" else "APPLICATIONS (${results.matchedApps.size})",
-                                style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
-                                color = palette.secondaryText
-                            )
-                            Text(
-                                text = "Press Enter to launch #1",
-                                style = AstraTypography.Caption,
-                                color = palette.primaryAccent
-                            )
-                        }
+                        Text(
+                            text = if (query.isBlank()) "RECENT & SUGGESTED APPS" else "APPLICATIONS (${results.matchedApps.size})",
+                            style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
+                            color = palette.secondaryText
+                        )
                     }
 
                     if (query.isBlank()) {
@@ -600,7 +596,7 @@ fun AstraSearchOverlay(
                                                 color = palette.primaryText
                                             )
                                             Text(
-                                                text = app.packageName,
+                                                text = app.category.label,
                                                 style = AstraTypography.Caption,
                                                 color = palette.secondaryText,
                                                 maxLines = 1,
@@ -613,10 +609,10 @@ fun AstraSearchOverlay(
                                         color = if (isHighlighted) palette.primaryAccent else palette.glassSurface
                                     ) {
                                         Text(
-                                            text = if (isHighlighted) "Enter ↵" else "Launch",
+                                            text = "Open",
                                             style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                                             color = if (isHighlighted) palette.obsidian0 else palette.primaryText,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
                                         )
                                     }
                                 }
@@ -625,11 +621,10 @@ fun AstraSearchOverlay(
                     }
                 }
 
-                // Real Android App Shortcuts (LauncherApps.ShortcutQuery)
                 if (results.matchedShortcuts.isNotEmpty()) {
                     item(key = "shortcuts_header") {
                         Text(
-                            text = "APP SHORTCUTS",
+                            text = "SHORTCUTS",
                             style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                             color = palette.secondaryText
                         )
@@ -661,7 +656,7 @@ fun AstraSearchOverlay(
                                     )
                                 }
                                 Text(
-                                    text = "Shortcut",
+                                    text = "Open",
                                     style = AstraTypography.Caption,
                                     color = palette.primaryAccent
                                 )
@@ -670,11 +665,10 @@ fun AstraSearchOverlay(
                     }
                 }
 
-                // Launcher Actions & Commands
                 if (results.matchedCommands.isNotEmpty()) {
-                    item(key = "commands_header") {
+                    item(key = "astra_surfaces_header") {
                         Text(
-                            text = "LAUNCHER COMMANDS",
+                            text = "ASTRA SURFACES & CUSTOMIZATION",
                             style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                             color = palette.secondaryText
                         )
@@ -706,7 +700,7 @@ fun AstraSearchOverlay(
                                     )
                                 }
                                 Text(
-                                    text = "Run",
+                                    text = "Open →",
                                     style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                                     color = palette.primaryAccent
                                 )
@@ -715,11 +709,10 @@ fun AstraSearchOverlay(
                     }
                 }
 
-                // Honest System Settings Deep-Links
                 if (results.matchedSettings.isNotEmpty()) {
                     item(key = "settings_header") {
                         Text(
-                            text = "ANDROID SYSTEM SETTINGS HANDOFF",
+                            text = "SYSTEM & DEVICE SETTINGS",
                             style = AstraTypography.Caption.copy(fontWeight = FontWeight.SemiBold),
                             color = palette.secondaryText
                         )
@@ -760,7 +753,6 @@ fun AstraSearchOverlay(
                     }
                 }
 
-                // Empty No-Match Recovery State (Section 31)
                 if (results.isEmpty && query.isNotBlank()) {
                     item(key = "no_results") {
                         AstraSurfaceCard(
@@ -770,13 +762,13 @@ fun AstraSearchOverlay(
                         ) {
                             Column(modifier = Modifier.padding(18.dp)) {
                                 Text(
-                                    text = "No installed apps or commands match \"$query\"",
+                                    text = "No results found for \"$query\"",
                                     style = AstraTypography.SectionHeader,
                                     color = palette.primaryText
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Astra only indexes real applications installed on your device. Try searching by package name or rescanning packages.",
+                                    text = "Try searching by app name, category, or system setting.",
                                     style = AstraTypography.Caption,
                                     color = palette.secondaryText
                                 )
