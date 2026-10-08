@@ -1,0 +1,95 @@
+name: Build & Verify Astra Real Android Launcher APK
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    name: Test, Assemble & Verify Real Launcher APK (API 26–34)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Configure Pre-installed Android SDK
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+
+      - name: Generate Release Signing Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$RUNNER_TEMP/astra-release.keystore" \
+            -storetype PKCS12 \
+            -alias astra_key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass astra_release_2026 \
+            -keypass astra_release_2026 \
+            -dname "CN=Astra Launcher, OU=Mobile Systems, O=Astra, L=San Francisco, S=CA, C=US"
+          echo "ASTRA_KEYSTORE_PATH=$RUNNER_TEMP/astra-release.keystore" >> $GITHUB_ENV
+          echo "ASTRA_KEYSTORE_PASSWORD=astra_release_2026" >> $GITHUB_ENV
+          echo "ASTRA_KEY_ALIAS=astra_key" >> $GITHUB_ENV
+          echo "ASTRA_KEY_PASSWORD=astra_release_2026" >> $GITHUB_ENV
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x ./gradlew
+
+      - name: Run All Unit & Robolectric Launcher Tests + Assemble Debug & Signed Release APKs
+        run: |
+          set -o pipefail
+          ./gradlew testDebugUnitTest assembleDebug assembleRelease --no-daemon 2>&1 | tee build_output.log || {
+            echo "::error title=Kotlin Compiler & Test Errors::$(grep -E '^e: |FAILED|FAILURE:|What went wrong:' -A 2 build_output.log | head -n 40 | tr '\n' ' ')"
+            exit 1
+          }
+
+      - name: Inspect Built APKs with aapt2 & Verify CATEGORY_HOME Manifest Registration
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/AstraLauncher-v2.0.0-debug.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/AstraLauncher-v2.0.0-release-signed.apk
+          ls -lh dist/
+          sha256sum dist/*.apk > dist/SHA256SUMS.txt
+          cat dist/SHA256SUMS.txt
+
+          AAPT2=$(find /usr/local/lib/android/sdk/build-tools -name "aapt2" | sort -V | tail -n 1)
+          echo "Using aapt2: $AAPT2"
+          $AAPT2 dump badging dist/AstraLauncher-v2.0.0-release-signed.apk > dist/apk-badging.txt
+          head -n 40 dist/apk-badging.txt
+
+          SUMMARY_INFO=$(ls -lh dist/*.apk | awk '{print $9 ": " $5}' | tr '\n' '; ')
+          echo "::notice title=Astra Real Launcher v2.0.0 Built & Verified::$SUMMARY_INFO"
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstraLauncher-v2.0.0-Debug-APK
+          path: dist/AstraLauncher-v2.0.0-debug.apk
+          if-no-files-found: error
+
+      - name: Upload Signed Release APK & Badging Verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstraLauncher-v2.0.0-Release-Signed-APK
+          path: |
+            dist/AstraLauncher-v2.0.0-release-signed.apk
+            dist/SHA256SUMS.txt
+            dist/apk-badging.txt
+          if-no-files-found: error

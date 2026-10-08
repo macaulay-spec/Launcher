@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Astra Launcher</string>
+    <string name="notification_listener_label">Astra Notification Stream</string>
+    <string name="widget_clock_name">Astra Orbital Clock</string>
+    <string name="widget_clock_desc">Cinematic adaptive time, date and solar atmosphere</string>
+</resources>

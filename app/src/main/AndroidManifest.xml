@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Package Visibility so Astra Launcher can discover and launch all installed apps on Android 11+ (API 30+) -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- Expand Android system Notification Shade & Quick Settings via StatusBarManager -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <!-- Set Wallpaper via WallpaperManager -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/Theme.AstraLauncher">
+
+        <!--
+            PRIMARY REAL ANDROID HOME LAUNCHER ACTIVITY
+            Declares CATEGORY_HOME + CATEGORY_DEFAULT + singleTask + stateNotNeeded + clearTaskOnLaunch + resumeWhilePausing
+            so Android and OEM systems (including TECNO/HiOS) route the system Home button directly to Astra Launcher.
+        -->
+        <activity
+            android:name=".AstraLauncherActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:clearTaskOnLaunch="true"
+            android:stateNotNeeded="true"
+            android:resumeWhilePausing="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|uiMode|density">
+
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.MONKEY" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            OPTIONAL NOTIFICATION LISTENER SERVICE
+            Used strictly for real notification badge counts and the Astra Notification surface when user grants access.
+        -->
+        <service
+            android:name=".AstraNotificationListenerService"
+            android:label="@string/notification_listener_label"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!--
+            EXPORTED FIRST-PARTY ANDROID APPWIDGET PROVIDER
+        -->
+        <receiver
+            android:name=".AstraOrbitalClockWidgetProvider"
+            android:label="@string/widget_clock_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/astra_clock_widget_info" />
+        </receiver>
+
+    </application>
+
+</manifest>

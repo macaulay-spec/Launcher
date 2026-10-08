@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Orbital arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7DD3FC"
+        android:strokeWidth="4.2"
+        android:strokeLineCap="round"
+        android:pathData="M24,62 C28,36 78,34 84,58" />
+    <!-- Abstract A apex -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F5F6F8"
+        android:strokeWidth="4.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M36,76 L54,28 L72,76" />
+    <!-- Precision star point -->
+    <path
+        android:fillColor="#7DD3FC"
+        android:pathData="M75,36 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+</vector>
