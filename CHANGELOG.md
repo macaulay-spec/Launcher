@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Every file carries a version + date. Nothing goes stale.
 
+## [1.1.3] — 2026-10-08
+
+### CI iteration 2 — root-cause: Gradle 8.10.2 + compileSdk 35 vs proven toolchain
+- Diagnosis: run #2 (AGP 8.7.3, compileSdk 35, Gradle 8.10.2) exited 0 but produced **no APK** (`app/build/outputs` contained only the manifest-merger report); artifact upload "succeeded" because upload-artifact@v4 defaults `if-no-files-found` to `warn`. Found a prior session's proven toolchain on this repo (AGP 8.5.2, Gradle 8.7, compileSdk 34) and matched it.
+- Reverted AGP 8.7.3 → **8.5.2**; wrapper Gradle 8.10.2 → **8.7**; compileSdk/targetSdk 35 → **34**; composeBom 2024.09.00 → **2024.06.00**; activity-compose 1.9.2 → **1.9.0**; added `compileOptions` Java 17
+- Workflow now uses the proven CI shape: `setup-java@v5` (cache: gradle), explicit `ANDROID_HOME`/`ANDROID_SDK_ROOT` + sdkmanager licenses, `./gradlew` build, `concurrency` cancel-in-progress
+- Workflow now commits `ci/last-build.log` (tail of build output) on success; `if-no-files-found: error` on artifact upload
+
 ## [1.1.1] — 2026-10-08
 
 ### CI iteration 1
