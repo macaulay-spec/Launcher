@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Every file carries a version + date. Nothing goes stale.
 
+## [1.2.0] — 2026-10-08
+
+### CI GREEN — APK built and uploaded 🎉
+- `gradle :app:assembleDebug` → **BUILD SUCCESSFUL in 1m 32s, 35/35 tasks executed** (incl. `:app:packageDebug`)
+- **APK: `app-debug.apk` — 7,873,117 bytes (7.87 MB), sha256 `f1fc435e14ecbc71730c9f5a72e6a10b0a209a3b259597610bbf61363a304ab6`**
+- Artifact `astra-launcher-debug-apk` uploaded to the run (download via Actions UI)
+- Run: `37760896906` (branch `arena/67cc6168-launcher`, commit `7c5f88d` + CI record commit `880e28d`)
+- Findings: artifact/log blob hosts are blocked from this sandbox (proof is committed to `ci/last-build.txt` + `ci/last-build.log` instead); pushes made with `GITHUB_TOKEN` do not re-trigger workflows, so the CI record-commits are loop-safe by design
+- `docs/03_technical_build_spec.md`, master plan and README updated to v1.2
+
 ## [1.1.3] — 2026-10-08
 
 ### CI iteration 2 — root-cause: Gradle 8.10.2 + compileSdk 35 vs proven toolchain

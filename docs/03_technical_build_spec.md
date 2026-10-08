@@ -10,7 +10,8 @@
 - **Architecture:** MVVM + Clean Architecture (ui / domain / data modules)
 - **Base:** Launcher3 fork (proven launcher plumbing: app loading, widgets, drag & drop, workspace) with the experience rebuilt on top (Decision D3)
 - **DI:** Hilt · **Persistence:** Room (favorites/usage) + DataStore (settings) · **Work:** WorkManager (suggestions refresh)
-- **Min SDK 26 (Android 8.0)** · Target 35 · 60Hz baseline, 120Hz-ready
+- **Min SDK 26 (Android 8.0)** · Target 34 · 60Hz baseline, 120Hz-ready
+- **CI toolchain (proven on GitHub runners):** JDK 17 (temurin) · Gradle 8.7 (wrapper) · AGP 8.5.2 · compileSdk 34 · Kotlin 1.9.24 · Compose BOM 2024.06.00 / compiler 1.5.14 — see `.github/workflows/build-apk.yml`
 
 ## 2. Module map
 | Module | Responsibility |
