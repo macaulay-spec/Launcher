@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Astra base theme: dark, no action bar — Jetpack Compose draws the full UI -->
+    <style name="Theme.Astra" parent="android:Theme.Material.NoActionBar" />
+</resources>
