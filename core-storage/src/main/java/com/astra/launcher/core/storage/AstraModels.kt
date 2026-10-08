@@ -170,7 +170,7 @@ enum class AstraWallpaperId(
         familyDescription = "Ultra-calm low-memory architectural graphite with subtle mineral edge",
         upperRegionLuminance = 0.06f,
         recommendedAccentHex = 0xFF38BDF8,
-        secondaryAccentHex = 0xFF94A3B8
+        secondaryAtmosphereHex = 0xFF94A3B8
     );
 
     companion object {

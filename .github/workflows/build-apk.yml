@@ -55,8 +55,8 @@ jobs:
       - name: Run All Unit & Robolectric Launcher Tests + Assemble Debug & Signed Release APKs
         run: |
           set -o pipefail
-          ./gradlew testDebugUnitTest assembleDebug assembleRelease --no-daemon --stacktrace 2>&1 | tee build_output.log || {
-            echo "::error title=Gradle Build Failure::$(grep -E 'e: |FAILURE:|What went wrong:|FAILED|Exception:' -A 4 build_output.log | tail -n 35 | tr '\n' ' ')"
+          ./gradlew testDebugUnitTest assembleDebug assembleRelease --no-daemon 2>&1 | tee build_output.log || {
+            echo "::error title=Kotlin Compiler & Test Errors::$(grep -E '^e: |FAILED|FAILURE:|What went wrong:' -A 2 build_output.log | head -n 40 | tr '\n' ' ')"
             exit 1
           }
 
