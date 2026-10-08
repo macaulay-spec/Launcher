@@ -37,12 +37,19 @@ jobs:
           mkdir -p ci
           if gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ci/build.log; then
             echo "result=success" >> "$GITHUB_OUTPUT"
-            APK=app/build/outputs/apk/debug/app-debug.apk
             {
               echo "status: SUCCESS"
-              echo "apk: $APK"
-              echo "size: $(stat -c%s "$APK") bytes"
-              echo "sha256: $(sha256sum "$APK" | cut -d' ' -f1)"
+              echo "pwd: $(pwd)"
+              echo "--- apk files found ---"
+              find app/build/outputs -type f -name "*.apk" -exec ls -la {} \; 2>&1
+              echo "--- outputs tree ---"
+              find app/build/outputs -maxdepth 4 2>&1 | sort
+              APK=$(find app/build/outputs -type f -name "app-debug.apk" 2>/dev/null | head -1)
+              echo "apk_path: ${APK:-NONE}"
+              if [ -n "$APK" ]; then
+                echo "size: $(stat -c%s "$APK") bytes"
+                echo "sha256: $(sha256sum "$APK" | cut -d' ' -f1)"
+              fi
             } > ci/last-build.txt
             git config user.name "astra-ci"
             git config user.email "astra-ci@users.noreply.github.com"
