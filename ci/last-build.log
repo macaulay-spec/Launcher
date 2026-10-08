@@ -1,6 +1,3 @@
-Fetching distribution.
-Downloading https://services.gradle.org/distributions/gradle-8.7-bin.zip
-............10%.............20%.............30%.............40%............50%.............60%.............70%.............80%.............90%............100%
 
 Welcome to Gradle 8.7!
 
@@ -38,15 +35,15 @@ Daemon will be stopped at the end of the build
 > Task :app:mergeDebugStartupProfile
 > Task :app:processDebugManifestForPackage
 > Task :app:checkDebugDuplicateClasses
-> Task :app:processDebugResources
-> Task :app:mergeExtDexDebug
 > Task :app:mergeDebugJniLibFolders
 > Task :app:mergeLibDexDebug
 > Task :app:mergeDebugNativeLibs NO-SOURCE
 > Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:processDebugResources
 > Task :app:validateSigningDebug
 > Task :app:writeDebugAppMetadata
 > Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeExtDexDebug
 > Task :app:compileDebugKotlin
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderDebug
@@ -58,5 +55,5 @@ Daemon will be stopped at the end of the build
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1m 32s
+BUILD SUCCESSFUL in 28s
 35 actionable tasks: 35 executed

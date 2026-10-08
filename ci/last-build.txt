@@ -1,6 +1,6 @@
 status: SUCCESS
 pwd: /home/runner/work/Launcher/Launcher
--rw-r--r-- 1 runner runner 7873117 Oct  8 10:04 app/build/outputs/apk/debug/app-debug.apk
+-rw-r--r-- 1 runner runner 7873117 Oct  8 10:10 app/build/outputs/apk/debug/app-debug.apk
 apk_path: app/build/outputs/apk/debug/app-debug.apk
 size: 7873117 bytes
-sha256: f1fc435e14ecbc71730c9f5a72e6a10b0a209a3b259597610bbf61363a304ab6
+sha256: 8421f607bc2ab0a956a1e62ca8f385aca566cc2e9df60f8bc001dd4c4fdfd518
