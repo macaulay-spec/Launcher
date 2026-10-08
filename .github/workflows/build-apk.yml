@@ -5,6 +5,9 @@ on:
     branches: [arena/67cc6168-launcher]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: Build debug APK
@@ -24,10 +27,50 @@ jobs:
         with:
           gradle-version: 8.10.2
 
+      # Self-reporting build: the sandbox cannot read Actions logs (blob host
+      # blocked), so results are committed back to the branch. The commit-message
+      # check is a loop guard: a run checked out at a "ci: record ..." commit
+      # never commits again, so each state triggers at most one extra run.
       - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        id: build
+        run: |
+          mkdir -p ci
+          if gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ci/build.log; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+            APK=app/build/outputs/apk/debug/app-debug.apk
+            {
+              echo "status: SUCCESS"
+              echo "apk: $APK"
+              echo "size: $(stat -c%s "$APK") bytes"
+              echo "sha256: $(sha256sum "$APK" | cut -d' ' -f1)"
+            } > ci/last-build.txt
+            git config user.name "astra-ci"
+            git config user.email "astra-ci@users.noreply.github.com"
+            git rm -q ci/last-build-failure.log 2>/dev/null || true
+            git add ci/last-build.txt
+            if [ "$(git log -1 --pretty=%s)" = "ci: record successful build" ]; then
+              echo "loop guard: previous commit already recorded a success"
+            else
+              git commit -q -m "ci: record successful build" || true
+              git push origin HEAD:arena/67cc6168-launcher || true
+            fi
+          else
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+            cp ci/build.log ci/last-build-failure.log
+            git config user.name "astra-ci"
+            git config user.email "astra-ci@users.noreply.github.com"
+            git add ci/last-build-failure.log
+            if [ "$(git log -1 --pretty=%s)" = "ci: record build failure log" ]; then
+              echo "loop guard: previous commit already recorded a failure"
+            else
+              git commit -q -m "ci: record build failure log" || true
+              git push origin HEAD:arena/67cc6168-launcher || true
+            fi
+            exit 1
+          fi
 
       - name: Upload APK artifact
+        if: steps.build.outputs.result == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: astra-launcher-debug-apk

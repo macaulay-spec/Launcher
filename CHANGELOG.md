@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Every file carries a version + date. Nothing goes stale.
 
+## [1.1.1] — 2026-10-08
+
+### CI iteration 1
+- First CI run failed at `gradle :app:assembleDebug`; the Actions log host is unreachable from this sandbox, so the workflow now **self-reports**: on failure it commits `ci/last-build-failure.log`, on success it commits `ci/last-build.txt` (APK size + sha256). A commit-message check loop-guards the CI's own pushes.
+- Bumped AGP 8.5.2 → 8.7.3 (official compileSdk 35 support; requires Gradle 8.9+ — 8.10.2 ✓, JDK 17 ✓)
+- Workflow: explicit `permissions: contents: write`
+
 ## [1.1.0] — 2026-10-08
 
 ### Phase 7 — CI/CD (reviewer redirect: "start your project, push, build APK via GitHub Actions")
